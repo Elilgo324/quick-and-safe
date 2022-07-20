@@ -7,7 +7,7 @@ import matplotlib.patches as mpatches
 import networkx as nx
 from shapely.geometry import Point, Polygon
 
-from prob_roadmap import ProbRoadmap
+from prm import PRM
 
 
 class Environment:
@@ -24,7 +24,25 @@ class Environment:
 
         self._create_targets(num_targets)
 
-        self._graph = None
+    @property
+    def x_range(self):
+        return self._x_range
+
+    @property
+    def y_range(self):
+        return self._y_range
+
+    @property
+    def no_entrances(self):
+        return self._no_entrances
+
+    @property
+    def threats(self):
+        return self._threats
+
+    @property
+    def targets(self):
+        return self._targets
 
     def _create_entities(self, num_entities: int, radius_range: Tuple[float, float]) \
             -> List[Dict[str, Union[Point, float, Polygon]]]:
@@ -43,22 +61,16 @@ class Environment:
         return False
 
     def _create_targets(self, num_targets: int) -> None:
+        # create targets out of no entrance zones
         self._targets = []
         while len(self._targets) < num_targets:
             potential_target = Point(randint(0, self._x_range), randint(0, self._y_range))
             if not self._target_is_in_obstacle(potential_target):
                 self._targets.append(potential_target)
 
-    def create_roadmap(self, num_iterations: int = 1000) -> None:
-        prm = ProbRoadmap(self._x_range, self._y_range, [ne['shape'] for ne in self._no_entrances])
-        prm.add_points(self._targets)
-        prm.extend_iterations(num_iterations)
-        self._graph = prm.graph
-
-    def plot_environment(self) -> None:
+    def plot(self) -> None:
         plt.figure(figsize=(10, 10))
-        plt.title(f'roadmap of size {len(self._graph.nodes)} nodes and {len(self._graph.edges)} '
-                  f'edges (seed {self._seed_value})', fontsize=20)
+        plt.title(f'environment of seed {self._seed_value}', fontsize=20)
 
         # plot no entrances
         for ne in self._no_entrances:
@@ -74,30 +86,24 @@ class Environment:
             plt.scatter(threat['center'].x, threat['center'].y, s=20, color='red', zorder=4)
             plt.plot(X, Y, color='red')
 
-        # plot roadmap
-        if self._graph is not None:
-            for _, _, e_data in self._graph.edges(data=True):
-                x1, x2, y1, y2 = e_data['x1'], e_data['x2'], e_data['y1'], e_data['y2']
-                plt.plot([x1, x2], [y1, y2], color='green')
-                plt.scatter([x1, x2], [y1, y2], color='black', s=60, zorder=7)
-                plt.scatter([x1, x2], [y1, y2], color='gray', s=50, zorder=8)
-
         # plot targets
         for target in self._targets:
             plt.scatter(target.x, target.y, color='black', zorder=9, s=100)
             plt.scatter(target.x, target.y, color='gold', zorder=10, s=80)
 
+        # plot legend
         plt.legend(handles=[mpatches.Patch(color='gold', label=f'{len(self._targets)} targets'),
                             mpatches.Patch(color='blue', label=f'{len(self._no_entrances)} no entrance zones'),
-                            mpatches.Patch(color='red', label=f'{len(self._threats)} threats')])
-        plt.show()
+                            mpatches.Patch(color='red', label=f'{len(self._threats)} threats')], ncol=3, loc='upper center')
 
 
 if __name__ == '__main__':
+    # create environment
     env = Environment()
-    env.create_roadmap(num_iterations=1000)
-    env.plot_environment()
-    graph = env._graph
-    start = time.time()
-    nx.floyd_warshall(graph)
-    print(time.time() - start)
+    env.plot()
+
+    # create roadmap
+    prm = PRM(env.x_range, env.y_range, [ne['shape'] for ne in env.no_entrances], env.targets)
+    prm.extend_iterations(100)
+    prm.plot()
+    plt.show()
