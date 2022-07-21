@@ -21,13 +21,13 @@ class PRM:
 
         # init graph
         self._graph = nx.Graph()
-        self.add_points(env.targets, is_target=True)
+        self._add_points(env.targets, is_target=True)
 
     @property
     def graph(self) -> nx.Graph():
         return self._graph
 
-    def add_points(self, points: List[Point], is_target: bool = False) -> None:
+    def _add_points(self, points: List[Point], is_target: bool = False) -> None:
         for point in points:
             self._graph.add_node(f'({point.x},{point.y})', x=point.x, y=point.y, is_target=is_target)
 
