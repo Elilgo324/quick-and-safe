@@ -16,8 +16,8 @@ class PRM:
         self._env = env
 
         # neighborhood consts
-        self._neighborhood_k = 5
-        self._neighborhood_dist = 5000
+        self._neighborhood_k = 10
+        self._neighborhood_dist = 1000
 
         # init graph
         self._graph = nx.Graph()
@@ -30,10 +30,6 @@ class PRM:
     def _add_points(self, points: List[Point], is_target: bool = False) -> None:
         for point in points:
             self._graph.add_node(f'({point.x},{point.y})', x=point.x, y=point.y, is_target=is_target)
-
-    def extend_iterations(self, num_iterations: int, neighborhood_type: str = 'k') -> None:
-        for _ in tqdm(range(num_iterations)):
-            self._extend(neighborhood_type)
 
     def _k_neighborhood(self, point: Point) -> List[Tuple[str, Dict]]:
         def _k_nearest_key(point_xy) -> float:
@@ -53,9 +49,17 @@ class PRM:
 
         return neighborhood_nodes
 
-    def _extend(self, neighborhood_type: str) -> None:
-        sample = self._env.sample()
+    def add_samples(self, num_samples: int, neighborhood_type: str = 'k') -> None:
+        samples = [self._env.sample() for _ in range(num_samples)]
 
+        # add nodes to graph
+        self._add_points(samples)
+
+        # add legal edges to graph
+        for sample in samples:
+            self._perform_connections(sample, neighborhood_type)
+
+    def _perform_connections(self, sample: Point, neighborhood_type: str) -> None:
         # add sample to graph
         sample_name = f'({sample.x},{sample.y})'
         self._graph.add_node(sample_name, x=sample.x, y=sample.y)
