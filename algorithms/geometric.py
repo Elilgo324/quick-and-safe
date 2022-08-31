@@ -16,6 +16,14 @@ def shift_point(point: Point, distance: float, angle: float) -> Point:
     return Point(point.x + x, point.y + y)
 
 
+def calculate_angle_on_chord(chord: float, radius: float) -> float:
+    return 2 * math.asin(0.5 * chord / radius)
+
+
+def calculate_angle_of_line(line_point1: Point, line_point2: Point) -> float:
+    return math.atan((line_point1.y - line_point2.y) / (line_point1.x - line_point2.x))
+
+
 def tangent_slopes_given_circle_and_point(center: Point, radius: float, point: Point) -> Tuple[float, float]:
     a = (center.x - point.x) ** 2 - radius ** 2
     b = 2 * (center.x - point.x) * (point.y - center.y)

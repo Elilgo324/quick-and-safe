@@ -3,7 +3,8 @@ from typing import Tuple, List
 
 from shapely.geometry import LineString, Point
 
-from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, shift_point
+from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, shift_point, \
+    calculate_angle_on_chord, calculate_angle_of_line
 
 
 def shortest_path_single_threat(
@@ -37,19 +38,33 @@ def safest_path_single_threat(source: Point, target: Point, threat_center: Point
 def single_threat_shortest_path_with_risk_constraint(
         source: Point, target: Point, threat_center: Point, threat_radius: float, risk_limit: float) -> List[Point]:
     threat = threat_center.buffer(threat_radius)
-    intersection = threat.exterior.intersection(LineString([source, target]))
+    source_target_line = LineString([source, target])
 
-    if intersection is None:
+    if not source_target_line.intersects(threat):
         return [source, target]
 
-    if LineString(intersection).length <= risk_limit:
+    if 2*threat_radius <= risk_limit:
         return [source, target]
 
-    angle1 = math.pi / 2 - math.asin(0.5 * risk_limit / threat_radius)
-    p1 = shift_point(point=threat_center, distance=threat_radius, angle=angle1)
-    p2 = shift_point(point=threat_center, distance=threat_radius, angle=angle1 + 1.5 * math.pi)
-    return [source, p1, p2, target]
+    angle_of_chord = calculate_angle_on_chord(risk_limit, threat_radius)
+    angle_of_line = calculate_angle_of_line(source, target)
 
+    angle_p1 = angle_of_line + (0.5 * math.pi - 0.5 * angle_of_chord)
+    angle_p2 = angle_p1 + angle_of_chord
+    p1 = shift_point(point=threat_center, distance=threat_radius, angle=angle_p1)
+    p2 = shift_point(point=threat_center, distance=threat_radius, angle=angle_p2)
+
+    angle_q1 = -(math.pi - 0.5 * angle_of_chord - angle_of_line)
+    angle_q2 = angle_q1 - angle_of_chord
+    q1 = shift_point(point=threat_center, distance=threat_radius, angle=angle_p1 + math.pi)
+    q2 = shift_point(point=threat_center, distance=threat_radius, angle=angle_p2 + math.pi)
+
+    optional_path1 = [source, p1, p2, target]
+    optional_path1.sort(key=lambda p:p.distance(source))
+    optional_path2 = [source, q1, q2, target]
+    optional_path2.sort(key=lambda p:p.distance(source))
+
+    return min([optional_path1, optional_path2], key=lambda path: LineString(path).length)
 
 
 def single_threat_safest_path_with_length_constraint(
