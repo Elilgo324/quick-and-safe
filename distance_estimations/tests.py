@@ -1,7 +1,7 @@
 from random import seed
 
-from environment import Environment
-from prm import PRM
+from environment.environment import Environment
+from roadmap.prm import PRM
 
 
 def test_equal_distance_computers():
