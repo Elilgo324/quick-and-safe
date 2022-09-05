@@ -1,5 +1,6 @@
 from random import randint
 from typing import List, Tuple
+import matplotlib.pyplot as plt
 
 from shapely.geometry import Point, Polygon
 
@@ -61,3 +62,8 @@ class Threat:
                     break
 
         return new_threat
+
+    def plot(self) -> None:
+        plt.plot([p.x for p in self.boundary], [p.y for p in self.boundary], color='red', zorder=1)
+        plt.scatter(self.center.x, self.center.y, s=20, color='black', zorder=1)
+        plt.scatter(self.center.x, self.center.y, s=10, color='red', zorder=2)

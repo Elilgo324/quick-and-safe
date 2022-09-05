@@ -84,10 +84,7 @@ class Environment:
 
         # plot threats
         for threat in self._threats:
-            X, Y = threat.polygon.exterior.xy
-            plt.scatter(threat.center.x, threat.center.y, s=20, color='black', zorder=3)
-            plt.scatter(threat.center.x, threat.center.y, s=10, color='red', zorder=4)
-            plt.plot(X, Y, color='red')
+            threat.plot()
 
         # plot targets
         for target in self._targets:

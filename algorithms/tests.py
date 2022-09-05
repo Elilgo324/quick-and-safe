@@ -1,8 +1,5 @@
-
-
 def test_kuku():
     pass
-
 
 
 if __name__ == '__main__':
