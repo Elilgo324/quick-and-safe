@@ -1,7 +1,7 @@
 from typing import Tuple, List
 
 from shapely.geometry import LineString, Point
-from scipy.optimize import fsolve
+from scipy.optimize import minimize_scalar
 import math
 
 from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, shift_point, \
@@ -74,24 +74,52 @@ def single_threat_shortest_path_with_risk_constraint(
 
     # else, return the shortest path with a parallel chord with length as the risk limit
     angle_on_chord = calculate_angle_on_chord(risk_limit, threat.radius)
-    angle_of_line = calculate_angle_of_line(source, target)
 
-    angle_p1 = angle_of_line + (0.5 * math.pi - 0.5 * angle_on_chord)
+    def length1(m):
+        angle_p1 = m + (0.5 * math.pi - 0.5 * angle_on_chord)
+        angle_p2 = angle_p1 + angle_on_chord
+
+        # check the chords of both sides and take the minimal
+        p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1)
+        p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2)
+
+        return source.distance(p1) + p1.distance(p2) + p2.distance(target)
+
+    def length2(m):
+        angle_p1 = m + (0.5 * math.pi - 0.5 * angle_on_chord)
+        angle_p2 = angle_p1 + angle_on_chord
+
+        # check the chords of both sides and take the minimal
+        p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1 + math.pi)
+        p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2 + math.pi)
+
+        return source.distance(p1) + p1.distance(p2) + p2.distance(target)
+
+    res1 = minimize_scalar(length1)
+    min_m1, min1 = res1.x, res1.fun
+    res2 = minimize_scalar(length2)
+    min_m2, min2 = res2.x, res1.fun
+
+    if min1 > min2:
+        angle_p1 = min_m2 + (0.5 * math.pi - 0.5 * angle_on_chord)
+        angle_p2 = angle_p1 + angle_on_chord
+
+        q1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1 + math.pi)
+        q2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2 + math.pi)
+
+        path2 = [source, q1, q2, target]
+
+        return path2, LineString(path2).length, LineString(path2[1:-1]).length
+
+    angle_p1 = min_m1 + (0.5 * math.pi - 0.5 * angle_on_chord)
     angle_p2 = angle_p1 + angle_on_chord
 
-    # check the chords of both sides and take the minimal
     p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1)
     p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2)
-    q1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1 + math.pi)
-    q2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2 + math.pi)
 
-    optional_path1 = [source, p1, p2, target]
-    optional_path1.sort(key=lambda p: p.distance(source))
-    optional_path2 = [source, q1, q2, target]
-    optional_path2.sort(key=lambda p: p.distance(source))
+    path1 = [source, p1, p2, target]
 
-    min_path = min([optional_path1, optional_path2], key=lambda path: LineString(path).length)
-    return min_path, LineString(min_path).length, LineString(min_path[1:-1]).length
+    return path1, LineString(path1).length, LineString(path1[1:-1]).length
 
 
 def single_threat_safest_path_with_length_constraint(
