@@ -5,7 +5,7 @@ from shapely.geometry import Point
 from heapq import nsmallest
 
 from roadmap.roadmap import Roadmap
-from environment.environment import Environment
+from settings.environment import Environment
 
 
 class PRM(Roadmap):

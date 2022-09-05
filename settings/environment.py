@@ -10,17 +10,17 @@ from threat import Threat
 
 
 class Environment:
-    def __init__(self, num_targets: int = 10, num_threats: int = 10,
-                 env_range: (int, int) = (1000, 1000), seed_value: int = 42) -> None:
+    def __init__(self, source: Point, target: Point, num_threats: int = 10, env_range: (int, int) = (1000, 1000),
+                 seed_value: int = 42) -> None:
         self._seed_value = seed_value
         seed(self._seed_value)
 
+        self._source = source
+        self._target = target
         self._x_range, self._y_range = env_range
 
-        self._threats, self._threats_polygons, self._targets = [], [], []
-
+        self._threats, self._threats_polygons = [], []
         self._create_disjoint_threats(num_threats)
-        self._create_targets(num_targets)
 
     @property
     def x_range(self) -> int:
@@ -39,8 +39,16 @@ class Environment:
         return self._threats_polygons
 
     @property
-    def targets(self) -> List[Point]:
-        return self._targets
+    def source(self) -> Point:
+        return self._source
+
+    @property
+    def target(self) -> Point:
+        return self._target
+
+    @property
+    def endpoints(self) -> List[Point]:
+        return [self._source, self._target]
 
     def is_safe_point(self, point: Point) -> bool:
         for threat in self.threats_polygons:
@@ -66,13 +74,9 @@ class Environment:
             self._threats.append(new_threat)
             self._threats_polygons.append(new_threat.polygon)
 
-    def _create_targets(self, num_targets: int) -> None:
-        # create targets out of threats
-        self._targets = [self.sample() for _ in range(num_targets)]
-
-    def sample(self) -> Point:
+    def sample(self, is_safe_sample=True) -> Point:
         rand_point = Point(randint(0, self._x_range), randint(0, self._y_range))
-        while not self.is_safe_point(rand_point):
+        while is_safe_sample and not self.is_safe_point(rand_point):
             rand_point = Point(randint(0, self._x_range), randint(0, self._y_range))
         return rand_point
 
@@ -86,7 +90,7 @@ class Environment:
         for threat in self._threats:
             threat.plot()
 
-        # plot targets
-        for target in self._targets:
-            plt.scatter(target.x, target.y, color='black', zorder=9, s=30)
-            plt.scatter(target.x, target.y, color='gold', zorder=10, s=20)
+        # plot source and target
+        for endpoint in [self._source, self._target]:
+            plt.scatter(endpoint.x, endpoint.y, color='black', zorder=9, s=40)
+            plt.scatter(endpoint.x, endpoint.y, color='gold', zorder=10, s=30)

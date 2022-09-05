@@ -8,27 +8,24 @@ from shapely.geometry import Point, LineString
 from settings.environment import Environment
 import matplotlib.pyplot as plt
 
-EPSILON = 0.000001
+EPSILON = 0.00001
 
 
 class Roadmap(ABC):
     def __init__(self, environment: Environment) -> None:
         self._environment = environment
 
-        # init graph with targets
+        # init graph with source and target
         self._graph = nx.Graph()
-        self._add_points(environment.targets, is_target=True)
-
-        self._tsp_shortest_graph = None
-        self._tsp_safest_graph = None
+        self._add_points(environment.endpoints, is_endpoint=True)
 
     @property
     def graph(self) -> nx.Graph():
         return self._graph
 
-    def _add_points(self, points: List[Point], is_target: bool = False) -> None:
+    def _add_points(self, points: List[Point], is_endpoint: bool = False) -> None:
         for point in points:
-            self._graph.add_node((point.x, point.y), x=point.x, y=point.y, is_target=is_target)
+            self._graph.add_node((point.x, point.y), x=point.x, y=point.y, is_endpoint=is_endpoint)
 
     def _add_edges(self, edges: List[Tuple[Point, Point]]) -> None:
         for edge in edges:
@@ -40,59 +37,18 @@ class Roadmap(ABC):
             self._graph.add_edge((p1.x, p1.y), (p2.x, p2.y), x1=p1.x, x2=p2.x, y1=p1.y, y2=p2.y,
                                  length=length, risk=risk + EPSILON * length)
 
-    def _construct_tsp_shortest_graph(self) -> None:
-        if self._tsp_shortest_graph is None:
-            self._tsp_shortest_graph = nx.Graph()
-            for p1, p2 in combinations(self._environment.targets, 2):
-                p1,p2 = (p1.x, p1.y), (p2.x, p2.y)
-                shortest_path = nx.shortest_path(self._graph, source=p1, target=p2, weight='length')
+    def _compute_path_length_and_risk(self, path: List[Tuple[float, float]]) -> Tuple[float, float]:
+        path_length = path_risk = 0
+        for p1, p2 in zip(path[:-1], path[1:]):
+            path_length += self._graph[p1][p2]['length']
+            path_risk += self._graph[p1][p2]['risk']
+        return path_length, path_risk
 
-                length, risk = 0, 0
-                for q1, q2 in zip(shortest_path[:-1], shortest_path[1:]):
-                    length += self._graph[q1][q2]['length']
-                    risk += self._graph[q1][q2]['risk']
-
-                self._tsp_shortest_graph.add_edge(
-                    (p1[0], p1[1]), (p2[0], p2[1]), length=length, risk=risk, path=shortest_path)
-
-    def _construct_tsp_safest_graph(self) -> None:
-        if self._tsp_safest_graph is None:
-            self._tsp_safest_graph = nx.Graph()
-            for p1, p2 in combinations(self._environment.targets, 2):
-                p1,p2 = (p1.x, p1.y), (p2.x, p2.y)
-                safest_path = nx.shortest_path(self._graph, source=p1, target=p2, weight='risk')
-
-                length, risk = 0, 0
-                for q1, q2 in zip(safest_path[:-1], safest_path[1:]):
-                    length += self._graph[q1][q2]['length']
-                    risk += self._graph[q1][q2]['risk']
-
-                self._tsp_safest_graph.add_edge(
-                    (p1[0], p1[1]), (p2[0], p2[1]), length=length, risk=risk, path=safest_path)
-
-    def shortest_tour(self) -> Tuple[List[Tuple[float, float]], float, float]:
-        self._construct_tsp_shortest_graph()
-        tour = nx.approximation.christofides(self._tsp_shortest_graph, weight='length')
-
-        tour_length, tour_risk = 0, 0
-        for p1, p2 in zip(tour[:-1], tour[1:]):
-            tour_length += self._tsp_shortest_graph[p1][p2]['length']
-            tour_risk += self._tsp_shortest_graph[p1][p2]['risk']
-
-        return tour, round(tour_length, 2), round(tour_risk, 2)
-
-    def safest_tour(self) -> Tuple[List[Tuple[float, float]], float, float]:
-        self._construct_tsp_safest_graph()
-        tour = nx.approximation.christofides(self._tsp_safest_graph, weight='risk')
-
-        actual_tour = []
-        tour_length, tour_risk = 0, 0
-        for p1, p2 in zip(tour[:-1], tour[1:]):
-            tour_length += self._tsp_safest_graph[p1][p2]['length']
-            tour_risk += self._tsp_safest_graph[p1][p2]['risk']
-            actual_tour.extend(self._tsp_safest_graph[p1][p2]['path'])
-
-        return actual_tour, round(tour_length, 2), round(tour_risk, 2)
+    def shortest_path(self, weight: str = 'length') -> Tuple[List[Tuple[float, float]], float, float]:
+        s, t = self._environment.source, self._environment.target
+        path = nx.shortest_path(self._graph, weight=weight, source=(s.x, s.y), target=(t.x, t.y))
+        path_length, path_risk = self._compute_path_length_and_risk(path)
+        return path, path_length, path_risk
 
     def plot(self, display_edges: bool = False) -> None:
         # plot settings
