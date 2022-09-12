@@ -19,7 +19,7 @@ class Environment:
         self._target = target
         self._x_range, self._y_range = env_range
 
-        self._threats, self._threats_polygons = [], []
+        self._threats = []
         self._create_disjoint_threats(num_threats)
 
     @property
@@ -36,7 +36,7 @@ class Environment:
 
     @property
     def threats_polygons(self) -> List[Polygon]:
-        return self._threats_polygons
+        return [threat.polygon for threat in self._threats]
 
     @property
     def source(self) -> Point:
@@ -65,14 +65,17 @@ class Environment:
 
     def _create_threats(self, num_threats: int) -> None:
         self._threats = [Threat.generate_random_threat((self.x_range, self.y_range)) for _ in range(num_threats)]
-        self._threats_polygons = [threat.polygon for threat in self._threats]
 
     def _create_disjoint_threats(self, num_threats: int) -> None:
         for _ in range(num_threats):
             new_threat = Threat.generate_non_intersecting_random_threat(
                 self.threats_polygons, (self.x_range, self.y_range))
             self._threats.append(new_threat)
-            self._threats_polygons.append(new_threat.polygon)
+
+    def compute_segment_attributes(self, p1: Point, p2: Point) -> Dict[str, float]:
+        segment = LineString([p1, p2])
+        return {'length': segment.length,
+                'risk': sum([segment.intersection(threat).length for threat in self.threats_polygons])}
 
     def sample(self, is_safe_sample=True) -> Point:
         rand_point = Point(randint(0, self._x_range), randint(0, self._y_range))

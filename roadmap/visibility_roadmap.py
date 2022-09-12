@@ -13,8 +13,8 @@ class VisibilityRoadmap(Roadmap):
         for threat in self._environment.threats:
             potential_nodes.extend(threat.get_buffered_boundary(0.1))
 
-        safe_edges = []
+        edges = []
         for p1, p2 in combinations(potential_nodes, 2):
-            safe_edges.append((p1, p2))
+            edges.append((p1, p2))
 
-        self._add_edges(safe_edges)
+        self._add_edges(edges)
