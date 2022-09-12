@@ -57,7 +57,7 @@ class Threat:
             new_threat = Threat.generate_random_threat(environment_range, radius_range)
 
             for threat in threats_polygons:
-                if threat.intersects(new_threat.polygon):
+                if threat.buffer(5).intersects(new_threat.polygon.buffer(5)):
                     is_intersecting = True
                     break
 

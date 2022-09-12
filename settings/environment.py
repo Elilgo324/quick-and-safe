@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from shapely.geometry import Point, Polygon, LineString
 
-from threat import Threat
+from settings.threat import Threat
 
 
 class Environment:
@@ -92,5 +92,5 @@ class Environment:
 
         # plot source and target
         for endpoint in [self._source, self._target]:
-            plt.scatter(endpoint.x, endpoint.y, color='black', zorder=9, s=40)
-            plt.scatter(endpoint.x, endpoint.y, color='gold', zorder=10, s=30)
+            plt.scatter(endpoint.x, endpoint.y, color='black', zorder=9, s=60)
+            plt.scatter(endpoint.x, endpoint.y, color='gold', zorder=10, s=50)
