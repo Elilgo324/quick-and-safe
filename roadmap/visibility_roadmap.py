@@ -11,10 +11,11 @@ class VisibilityRoadmap(Roadmap):
 
         potential_nodes = deepcopy(environment.endpoints)
         for threat in self._environment.threats:
-            potential_nodes.extend(threat.get_buffered_boundary(0.1))
+            potential_nodes.extend(threat.get_buffered_boundary(1))
 
         edges = []
         for p1, p2 in combinations(potential_nodes, 2):
+            # if environment.is_safe_edge(p1,p2):
             edges.append((p1, p2))
 
         self._add_edges(edges)

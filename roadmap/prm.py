@@ -6,6 +6,7 @@ from shapely.geometry import Point
 from heapq import nsmallest
 
 from roadmap.roadmap import Roadmap
+from settings.coord import Coord
 from settings.environment import Environment
 from tqdm import tqdm
 
@@ -16,14 +17,17 @@ class PRM(Roadmap):
 
         # neighborhood consts
         self._neighborhood_k = 10
+        self._near_radius = 10
 
-    def _k_neighborhood(self, point: Point) -> List[Point]:
+    def _k_neighborhood(self, point: Coord) -> List[Coord]:
         def _k_nearest_key(other) -> float:
-            dist = Point(*other).distance(point)
+            dist = Coord(*other).distance(point)
             return dist if dist > 0 else math.inf
 
-        k_nearest_nodes = nsmallest(self._neighborhood_k, self._graph.nodes, key=_k_nearest_key)
-        return [Point(*node) for node in k_nearest_nodes]
+        return [Coord(*p) for p in nsmallest(self._neighborhood_k, self._graph.nodes, key=_k_nearest_key)]
+
+    def _near(self, point: Coord) -> List[Coord]:
+        return [Coord(*p) for p in self.graph.nodes if Coord(*p).distance(point) < self._near_radius]
 
     def add_samples(self, num_samples: int) -> float:
         samples = [self._environment.sample(is_safe_sample=False) for _ in range(num_samples)]
@@ -37,7 +41,7 @@ class PRM(Roadmap):
             self._perform_connections(sample)
         return round(time() - start, 3)
 
-    def _perform_connections(self, sample: Point) -> None:
+    def _perform_connections(self, sample: Coord) -> None:
         # find near nodes to connect
         near_nodes = self._k_neighborhood(sample)
 

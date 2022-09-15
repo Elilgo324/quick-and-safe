@@ -1,7 +1,6 @@
 from copy import deepcopy
 
-from shapely.geometry import Point
-
+from settings.coord import Coord
 from settings.environment import Environment
 from roadmap.roadmap import Roadmap
 from itertools import combinations
@@ -18,7 +17,7 @@ class Grid(Roadmap):
         for x in range(0, int(environment.x_range), GRID_STEP):
             row = []
             for y in range(0, int(environment.y_range), GRID_STEP):
-                row.append(Point(x,y))
+                row.append(Coord(x,y))
 
             grid_nodes.append(row)
 

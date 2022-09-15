@@ -1,37 +1,32 @@
+import itertools
 from typing import Tuple, List
-
+from itertools import product, combinations
 from shapely.geometry import LineString, Point
 from scipy.optimize import minimize_scalar
 import math
+from settings.environment import Environment
 
 from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, shift_point, \
-    calculate_angle_on_chord, calculate_angle_of_line
+    calculate_angle_on_chord, calculate_angle_of_line, boundary_between_points
+from settings.coord import Coord
 from settings.threat import Threat
+
+EPSILON = 7
+
+
+def _compute_path_length(path: List[Coord]) -> float:
+    return sum([c1.distance(c2) for c1, c2 in zip(path[:-1], path[1:])])
 
 
 def shortest_path_single_threat(
-        source: Point, target: Point, threat: Threat) -> Tuple[List[Point], float, float]:
-    """Calculates the shortest path considering one threat
-
-    :param source: the source
-    :param target: the target
-    :param threat: a threat
-    :return: shortest path between source and target, its length and risk
-    """
+        source: Coord, target: Coord, threat: Threat) -> Tuple[List[Coord], float, float]:
     source_target_line = LineString([source, target])
     threat_intersection = LineString(source_target_line.intersection(threat.polygon))
 
     return [source, target], source_target_line.length, threat_intersection.length
 
 
-def safest_path_single_threat(source: Point, target: Point, threat: Threat) -> Tuple[List[Point], float, float]:
-    """Calculates the (shortest) safest path considering one threat
-
-    :param source: the source
-    :param target: the target
-    :param threat: a threat
-    :return: safest path between source and target, its length and risk
-    """
+def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> Tuple[List[Coord], float, float]:
     source_contacts = contact_points_given_circle_and_point(threat.center, threat.radius, source)
     target_contacts = contact_points_given_circle_and_point(threat.center, threat.radius, target)
 
@@ -51,134 +46,71 @@ def safest_path_single_threat(source: Point, target: Point, threat: Threat) -> T
 
 
 def single_threat_shortest_path_with_risk_constraint(
-        source: Point, target: Point, threat: Threat, risk_limit: float) -> Tuple[List[Point], float, float]:
-    """Calculates the shortest path with parallel chord under a risk constraint
-    Notice this is not necessarily the general shortest path, as the chord can be non-parallel.
+        source: Coord, target: Coord, threat: Threat, risk_limit: float, environment: Environment
+) -> Tuple[List[Coord], float, float]:
+    print(f'planning with risk limit {risk_limit}...')
+    s_contact1, s_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, source)
+    t_contact1, t_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, target)
 
-    :param source: the source
-    :param target: the target
-    :param threat: a threat
-    :param risk_limit: the risk constraint
-    :return: the shortest path with parallel chord under the risk constraint
-    """
-    source_target_line = LineString([source, target])
+    contact_distance = min(
+        s_contact1.distance(t_contact2), s_contact2.distance(t_contact1)
+    )
 
-    # if not intersecting threat, return the direct line
-    if not source_target_line.intersects(threat.polygon):
-        return [source, target], source_target_line.length, 0
+    # if chord in range of contact points
+    if contact_distance >= risk_limit:
+        print(f'contact points distance {round(contact_distance, 2)} is above limit {risk_limit}')
+        boundary = threat.get_buffered_boundary(0.1)
 
-    # if intersection is under the risk limit, return the direct line
-    intersection = source_target_line.intersection(threat.polygon)
-    if intersection.length <= risk_limit:
-        return [source, target], source_target_line.length, intersection.length
+        if s_contact1.distance(t_contact2) <= s_contact2.distance(t_contact1):
+            s_contact = s_contact1
+            t_contact = t_contact2
+        else:
+            s_contact = s_contact2
+            t_contact = t_contact1
 
-    # else, return the shortest path with a parallel chord with length as the risk limit
-    angle_on_chord = calculate_angle_on_chord(risk_limit, threat.radius)
+        s_contact_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(s_contact))
+        boundary_start = min(boundary[s_contact_idx:], key=lambda p: abs(p.distance(s_contact) - risk_limit))
+        boundary_points = boundary_between_points(boundary, boundary_start, t_contact)
+        print(boundary_points)
+        path = [source, s_contact] + boundary_points + [t_contact, target]
+        attributes = environment.compute_path_attributes(path)
 
-    def length1(m):
-        angle_p1 = m + (0.5 * math.pi - 0.5 * angle_on_chord)
-        angle_p2 = angle_p1 + angle_on_chord
+        return path, attributes['length'], attributes['risk']
 
-        # check the chords of both sides and take the minimal
-        p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1)
-        p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2)
+    print('finding best chord...')
+    boundary = threat.get_buffered_boundary(0.1)
+    optional_chords = list(product(boundary, boundary))
 
-        return source.distance(p1) + p1.distance(p2) + p2.distance(target)
+    # filter chords with length not (close to) equal budget
+    optional_chords = [
+        chord for chord in optional_chords if (abs(chord[0].distance(chord[1]) - risk_limit) < EPSILON)
+    ]
 
-    def length2(m):
-        angle_p1 = m + (0.5 * math.pi - 0.5 * angle_on_chord)
-        angle_p2 = angle_p1 + angle_on_chord
+    # filter chords that intersect circle
+    optional_chords = [
+        chord for chord in optional_chords if not (
+                LineString([source, chord[0]]).intersects(threat.polygon)
+                or LineString([target, chord[1]]).intersects(threat.polygon)
+        )
+    ]
 
-        # check the chords of both sides and take the minimal
-        p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1 + math.pi)
-        p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2 + math.pi)
+    optional_paths = [[source, chord[0], chord[1], target] for chord in optional_chords]
 
-        return source.distance(p1) + p1.distance(p2) + p2.distance(target)
-
-    res1 = minimize_scalar(length1)
-    min_m1, min1 = res1.x, res1.fun
-    res2 = minimize_scalar(length2)
-    min_m2, min2 = res2.x, res1.fun
-
-    if min1 > min2:
-        angle_p1 = min_m2 + (0.5 * math.pi - 0.5 * angle_on_chord)
-        angle_p2 = angle_p1 + angle_on_chord
-
-        q1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1 + math.pi)
-        q2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2 + math.pi)
-
-        path2 = [source, q1, q2, target]
-
-        return path2, LineString(path2).length, LineString(path2[1:-1]).length
-
-    angle_p1 = min_m1 + (0.5 * math.pi - 0.5 * angle_on_chord)
-    angle_p2 = angle_p1 + angle_on_chord
-
-    p1 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p1)
-    p2 = shift_point(point=threat.center, distance=threat.radius, angle=angle_p2)
-
-    path1 = [source, p1, p2, target]
-
-    return path1, LineString(path1).length, LineString(path1[1:-1]).length
+    path = min(optional_paths, key=_compute_path_length)
+    path_attributes = environment.compute_path_attributes(path)
+    return path, path_attributes['length'], path_attributes['risk']
 
 
 def single_threat_safest_path_with_length_constraint(
-        source: Point, target: Point, threat: Threat, length_limit: float) -> Tuple[List[Point], float, float]:
-    """Calculates the safest path with parallel chord under a length constraint
-    Notice this is not necessarily the general safest path, as the chord can be non-parallel.
-
-    :param source: the source
-    :param target: the target
-    :param threat: a threat
-    :param length_limit: the length constraint
-    :return: the safest path with parallel chord under the risk constraint
-    """
-    safest_path, safest_path_length, _ = safest_path_single_threat(source, target, threat)
-
-    if safest_path_length <= length_limit:
-        return safest_path, safest_path_length, 0
-
-    r = threat.radius
-    center = threat.center
-    st_slope = (target.y - source.y) / (target.x - source.x)
-
-    # solve 4 equations of 4 variables to get the points on the threat
-    def equations(p):
-        x1, y1, x2, y2 = p
-        return ((x1 - center.x) ** 2 + (y1 - center.y) ** 2 - r ** 2,
-                (x2 - center.x) ** 2 + (y2 - center.y) ** 2 - r ** 2,
-                (y1 - y2) / (x1 - x2) - st_slope,
-                math.sqrt((x1 - source.x) ** 2 + (y1 - source.y) ** 2) +
-                math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
-                math.sqrt((x2 - target.x) ** 2 + (y2 - target.y) ** 2) - length_limit)
-
-    x1, y1, x2, y2 = fsolve(equations, (source.x, source.y, target.x, target.y))
-    p1, p2 = Point(x1, y1), Point(x2, y2)
-    path = [source, p1, p2, target]
-    return path, LineString(path).length, p1.distance(p2)
+        source: Coord, target: Coord, threat: Threat, length_limit: float) -> Tuple[List[Coord], float, float]:
+    pass
 
 
 def multiple_threats_safest_path_with_length_constraint(
-        source: Point, target: Point, threats: Tuple[Threat], length_limit: float) -> Tuple[List[Point], float, float]:
-    """Calculates the safest path with a risk constraint considering multiple threats
-
-    :param source: the source
-    :param target: the target
-    :param threats: the threats
-    :param length_limit: the risk constraint
-    :return: the safest path with a risk constraint considering multiple threats
-    """
+        source: Coord, target: Coord, threats: Tuple[Threat], length_limit: float) -> Tuple[List[Coord], float, float]:
     pass
 
 
 def multiple_threats_shortest_path_with_risk_constraint(
-        source: Point, target: Point, threats: Tuple[Threat], risk_limit: float) -> Tuple[List[Point], float, float]:
-    """Calculates the shortest path with a risk constraint considering multiple threats
-
-    :param source: the source
-    :param target: the target
-    :param threats: the threats
-    :param risk_limit: the risk constraint
-    :return: the shortest path with a risk constraint considering multiple threats
-    """
+        source: Coord, target: Coord, threats: Tuple[Threat], risk_limit: float) -> Tuple[List[Coord], float, float]:
     pass

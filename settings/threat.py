@@ -4,18 +4,20 @@ import matplotlib.pyplot as plt
 
 from shapely.geometry import Point, Polygon
 
-BUFFER_RESOLUTION = 4
+from settings.coord import Coord
+
+BUFFER_RESOLUTION = 20
 
 
 class Threat:
-    def __init__(self, center: Point, radius: float) -> None:
+    def __init__(self, center: Coord, radius: float) -> None:
         self._center = center
         self._radius = radius
         self._polygon = center.buffer(radius, resolution=BUFFER_RESOLUTION)
         self._boundary = None
 
     @property
-    def center(self) -> Point:
+    def center(self) -> Coord:
         return self._center
 
     @property
@@ -27,22 +29,22 @@ class Threat:
         return self._polygon
 
     @property
-    def boundary(self) -> List[Point]:
+    def boundary(self) -> List[Coord]:
         if self._boundary is None:
             X, Y = self.polygon.exterior.coords.xy
-            self._boundary = [Point(x, y) for x, y in zip(list(X), list(Y))]
+            self._boundary = [Coord(x, y) for x, y in zip(list(X), list(Y))]
         return self._boundary
 
-    def get_buffered_boundary(self, buffer: float = 1) -> List[Point]:
+    def get_buffered_boundary(self, buffer: float = 1) -> List[Coord]:
         X, Y = self.center.buffer(self.radius + buffer, resolution=BUFFER_RESOLUTION).exterior.coords.xy
-        return [Point(x, y) for x, y in zip(list(X), list(Y))]
+        return [Coord(x, y) for x, y in zip(list(X), list(Y))]
 
     @classmethod
     def generate_random_threat(cls, environment_range: Tuple[int, int], radius_range: Tuple[int, int] = (100, 200)) \
             -> 'Threat':
         rand_radius = randint(*radius_range)
         x_range, y_range = environment_range
-        rand_center = Point(randint(rand_radius, x_range - rand_radius), randint(rand_radius, y_range - rand_radius))
+        rand_center = Coord(randint(rand_radius, x_range - rand_radius), randint(rand_radius, y_range - rand_radius))
         return Threat(center=rand_center, radius=rand_radius)
 
     @classmethod
