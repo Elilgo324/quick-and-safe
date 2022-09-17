@@ -6,7 +6,7 @@ from scipy.optimize import minimize_scalar
 import math
 from settings.environment import Environment
 
-from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, shift_point, \
+from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, \
     calculate_angle_on_chord, calculate_angle_of_line, boundary_between_points
 from settings.coord import Coord
 from settings.threat import Threat
@@ -27,13 +27,8 @@ def shortest_path_single_threat(
 
 
 def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> Tuple[List[Coord], float, float]:
-    source_contacts = contact_points_given_circle_and_point(threat.center, threat.radius, source)
-    target_contacts = contact_points_given_circle_and_point(threat.center, threat.radius, target)
-
-    # check the safe paths via the two sides of the threat
-    sort_key = lambda p: is_left_side_of_line(line_point1=source, line_point2=target, point=p)
-    source_contact1, source_contact2 = sorted(source_contacts, key=sort_key)
-    target_contact1, target_contact2 = sorted(target_contacts, key=sort_key)
+    source_contact1, source_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, source)
+    target_contact2, target_contact1 = contact_points_given_circle_and_point(threat.center, threat.radius, target)
 
     edge_points1 = [p for p in threat.boundary if not is_left_side_of_line(source_contact1, target_contact1, p)]
     potential_path1 = [source, source_contact1] + edge_points1 + [target_contact1, target]

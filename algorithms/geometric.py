@@ -9,18 +9,12 @@ from settings.coord import Coord
 def boundary_between_points(boundary: List[Coord], p1: Coord, p2: Coord) -> List[Coord]:
     start_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(p1))
     end_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(p2))
-    return boundary[start_idx:end_idx+1]
+    return boundary[start_idx:end_idx + 1]
 
 
 def is_left_side_of_line(line_point1: Coord, line_point2: Coord, point: Coord) -> bool:
     return (line_point2.x - line_point1.x) * (point.y - line_point1.y) \
            - (line_point2.y - line_point1.y) * (point.x - line_point1.x) > 0
-
-
-def shift_point(point: Coord, distance: float, angle: float) -> Coord:
-    x = distance * math.cos(angle)
-    y = distance * math.sin(angle)
-    return Coord(point.x + x, point.y + y)
 
 
 def calculate_angle_on_chord(chord: float, radius: float) -> float:
@@ -45,9 +39,10 @@ def tangent_slopes_given_circle_and_point(center: Coord, radius: float, point: C
 def contact_points_given_circle_and_point(center: Coord, radius: float, point: Coord) -> Tuple[Coord, Coord]:
     pc_angle = math.atan((center.y - point.y) / (center.x - point.x))
 
+    # TBD CHECK what are the conditions
     # fix according side of horizontal axis
-    if center.y > point.y:
-        pc_angle = pc_angle + math.pi
+    # if center.y > point.y:
+    #     pc_angle = pc_angle + math.pi
 
     alpha = math.asin(radius / center.distance(point))
 
