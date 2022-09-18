@@ -5,9 +5,9 @@ from shapely.geometry import LineString, Point
 from scipy.optimize import minimize_scalar
 import math
 from settings.environment import Environment
-
+from settings.threat import Threat
 from algorithms.geometric import is_left_side_of_line, \
-    calculate_angle_on_chord, calculate_angle_of_line, boundary_between_points
+    calculate_angle_on_chord, calculate_angle_of_line
 from settings.coord import Coord
 from settings.threat import Threat
 

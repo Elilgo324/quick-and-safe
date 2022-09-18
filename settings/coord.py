@@ -19,15 +19,11 @@ class Coord(Point):
                - (line_point2.y - line_point1.y) * (self.x - line_point1.x) > 0
 
     def contact_points_with_circle(self, center: 'Coord', radius: float) -> Tuple['Coord', 'Coord']:
-        pc_angle = math.atan2(center.y - self.y, center.x - self.x)
+        # angle of pc line
+        pc_angle = math.atan2(center.y - self.y, center.x - self.x) + math.pi
 
-        # fix according side of horizontal axis
-        is_upside_down = self.y > center.y
-        # if is_upside_down:
-        pc_angle = math.pi + pc_angle
-
+        # angle of deviation from pc line
         alpha = math.asin(radius / self.distance(center))
-        print(alpha)
 
         left_contact_angle = pc_angle - alpha + 0.5 * math.pi
         right_contact_angle = pc_angle + alpha - 0.5 * math.pi

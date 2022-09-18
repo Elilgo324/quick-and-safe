@@ -78,10 +78,15 @@ if __name__ == '__main__':
     point3 = Coord(6, 10)
     point4 = Coord(2, 2)
 
+    threat = Threat(center, radius)
+
     c11, c12 = point1.contact_points_with_circle(center, radius)
     c21, c22 = point2.contact_points_with_circle(center, radius)
     c31, c32 = point3.contact_points_with_circle(center, radius)
     c41, c42 = point4.contact_points_with_circle(center, radius)
+
+    boundary = threat.get_boundary_between(c11, c12)
+    plt.scatter([p.x for p in boundary], [p.y for p in boundary])
 
     plt.figure(figsize=(5, 5))
     plt.title('contact calculation example', fontsize=16)

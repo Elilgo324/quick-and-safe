@@ -1,3 +1,4 @@
+import math
 from random import randint
 from typing import List, Tuple
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ from shapely.geometry import Point, Polygon
 
 from settings.coord import Coord
 
+ANGLE_STEP = math.pi / 6
 BUFFER_RESOLUTION = 20
 
 
@@ -34,6 +36,23 @@ class Threat:
             X, Y = self.polygon.exterior.coords.xy
             self._boundary = [Coord(x, y) for x, y in zip(list(X), list(Y))]
         return self._boundary
+
+    def get_boundary_between(self, c1: Coord, c2: Coord) -> List[Coord]:
+        angle1 = math.asin((c1.y - self.center.y) / (c1.x - self.center.x))
+        angle2 = math.asin((c2.y - self.center.y) / (c2.x - self.center.x))
+
+        if angle1 > angle2:
+            temp = angle2
+            angle2 = angle1
+            angle1 = temp
+
+        # create boundary in range of angles
+        boundary = []
+        while angle1 < angle2:
+            boundary.append(self.center.shift(self.radius, angle1))
+            angle1 += ANGLE_STEP
+
+        return boundary
 
     def get_buffered_boundary(self, buffer: float = 1) -> List[Coord]:
         X, Y = self.center.buffer(self.radius + buffer, resolution=BUFFER_RESOLUTION).exterior.coords.xy

@@ -6,11 +6,6 @@ from math import sqrt, acos, atan2, sin, cos
 from settings.coord import Coord
 
 
-def boundary_between_points(boundary: List[Coord], p1: Coord, p2: Coord) -> List[Coord]:
-    start_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(p1))
-    end_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(p2))
-    return boundary[start_idx:end_idx + 1]
-
 
 def is_left_side_of_line(line_point1: Coord, line_point2: Coord, point: Coord) -> bool:
     return (line_point2.x - line_point1.x) * (point.y - line_point1.y) \
