@@ -6,7 +6,7 @@ from scipy.optimize import minimize_scalar
 import math
 from settings.environment import Environment
 
-from algorithms.geometric import contact_points_given_circle_and_point, is_left_side_of_line, \
+from algorithms.geometric import is_left_side_of_line, \
     calculate_angle_on_chord, calculate_angle_of_line, boundary_between_points
 from settings.coord import Coord
 from settings.threat import Threat
@@ -27,8 +27,8 @@ def shortest_path_single_threat(
 
 
 def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> Tuple[List[Coord], float, float]:
-    source_contact1, source_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, source)
-    target_contact2, target_contact1 = contact_points_given_circle_and_point(threat.center, threat.radius, target)
+    source_contact1, source_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
+    target_contact1, target_contact2 = target.contact_points_with_circle(threat.center, threat.radius)
 
     edge_points1 = [p for p in threat.boundary if not is_left_side_of_line(source_contact1, target_contact1, p)]
     potential_path1 = [source, source_contact1] + edge_points1 + [target_contact1, target]
@@ -44,8 +44,8 @@ def single_threat_shortest_path_with_risk_constraint(
         source: Coord, target: Coord, threat: Threat, risk_limit: float, environment: Environment
 ) -> Tuple[List[Coord], float, float]:
     print(f'planning with risk limit {risk_limit}...')
-    s_contact1, s_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, source)
-    t_contact1, t_contact2 = contact_points_given_circle_and_point(threat.center, threat.radius, target)
+    s_contact1, s_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
+    t_contact1, t_contact2 = target.contact_points_with_circle(threat.center, threat.radius)
 
     contact_distance = min(
         s_contact1.distance(t_contact2), s_contact2.distance(t_contact1)

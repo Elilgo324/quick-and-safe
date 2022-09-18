@@ -34,20 +34,3 @@ def tangent_slopes_given_circle_and_point(center: Coord, radius: float, point: C
     m2 = (-b - sqrt(b ** 2 - 4 * a * c)) / 2 * a
 
     return m1, m2
-
-
-def contact_points_given_circle_and_point(center: Coord, radius: float, point: Coord) -> Tuple[Coord, Coord]:
-    pc_angle = math.atan((center.y - point.y) / (center.x - point.x))
-
-    # TBD CHECK what are the conditions
-    # fix according side of horizontal axis
-    # if center.y > point.y:
-    #     pc_angle = pc_angle + math.pi
-
-    alpha = math.asin(radius / center.distance(point))
-
-    contact_angle1 = pc_angle - alpha + 0.5 * math.pi
-    contact_angle2 = pc_angle + alpha - 0.5 * math.pi
-
-    return center.shift(distance=radius, angle=contact_angle1), \
-           center.shift(distance=radius, angle=contact_angle2)
