@@ -14,7 +14,7 @@ from settings.threat import Threat
 EPSILON = 7
 
 
-def _compute_path_length(path: List[Coord]) -> float:
+def compute_path_length(path: List[Coord]) -> float:
     return sum([c1.distance(c2) for c1, c2 in zip(path[:-1], path[1:])])
 
 
@@ -47,14 +47,11 @@ def single_threat_shortest_path_with_risk_constraint(
     s_contact1, s_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
     t_contact1, t_contact2 = target.contact_points_with_circle(threat.center, threat.radius)
 
-    contact_distance = min(
-        s_contact1.distance(t_contact2), s_contact2.distance(t_contact1)
-    )
+    contact_distance = min(s_contact1.distance(t_contact2), s_contact2.distance(t_contact1))
 
     # if chord in range of contact points
     if contact_distance >= risk_limit:
         print(f'contact points distance {round(contact_distance, 2)} is above limit {risk_limit}')
-        boundary = threat.get_buffered_boundary(0.1)
 
         if s_contact1.distance(t_contact2) <= s_contact2.distance(t_contact1):
             s_contact = s_contact1
@@ -63,11 +60,8 @@ def single_threat_shortest_path_with_risk_constraint(
             s_contact = s_contact2
             t_contact = t_contact1
 
-        s_contact_idx = min(range(len(boundary)), key=lambda p: boundary[p].distance(s_contact))
-        boundary_start = min(boundary[s_contact_idx:], key=lambda p: abs(p.distance(s_contact) - risk_limit))
-        boundary_points = boundary_between_points(boundary, boundary_start, t_contact)
-        print(boundary_points)
-        path = [source, s_contact] + boundary_points + [t_contact, target]
+        boundary_between_points = threat.get_boundary_between(s_contact, t_contact)
+        path = [source] + boundary_between_points + [target]
         attributes = environment.compute_path_attributes(path)
 
         return path, attributes['length'], attributes['risk']
@@ -90,8 +84,10 @@ def single_threat_shortest_path_with_risk_constraint(
     ]
 
     optional_paths = [[source, chord[0], chord[1], target] for chord in optional_chords]
+    
+    # create optional paths with walking on boundary, and add binary search
 
-    path = min(optional_paths, key=_compute_path_length)
+    path = min(optional_paths, key=compute_path_length)
     path_attributes = environment.compute_path_attributes(path)
     return path, path_attributes['length'], path_attributes['risk']
 

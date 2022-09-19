@@ -7,8 +7,13 @@ from shapely.geometry import Point, Polygon
 
 from settings.coord import Coord
 
-ANGLE_STEP = math.pi / 6
+ANGLE_STEP = math.pi / 20
 BUFFER_RESOLUTION = 20
+EPSILON = 0.1
+
+
+def _compute_path_length(path: List[Coord]) -> float:
+    return sum([c1.distance(c2) for c1, c2 in zip(path[:-1], path[1:])])
 
 
 class Threat:
@@ -37,22 +42,31 @@ class Threat:
             self._boundary = [Coord(x, y) for x, y in zip(list(X), list(Y))]
         return self._boundary
 
-    def get_boundary_between(self, c1: Coord, c2: Coord) -> List[Coord]:
-        angle1 = math.asin((c1.y - self.center.y) / (c1.x - self.center.x))
-        angle2 = math.asin((c2.y - self.center.y) / (c2.x - self.center.x))
+    def get_boundary_between(self, start: Coord, end: Coord) -> List[Coord]:
+        angle1 = math.atan2(start.y - self.center.y, start.x - self.center.x)
+        angle2 = math.atan2(end.y - self.center.y, end.x - self.center.x)
 
-        if angle1 > angle2:
-            temp = angle2
-            angle2 = angle1
-            angle1 = temp
+        small_angle = min(angle1, angle2)
+        great_angle = max(angle1, angle2)
 
-        # create boundary in range of angles
-        boundary = []
-        while angle1 < angle2:
-            boundary.append(self.center.shift(self.radius, angle1))
-            angle1 += ANGLE_STEP
+        # counterclockwise boundary
+        boundary1 = []
+        angle = small_angle
+        while angle < great_angle:
+            boundary1.append(self.center.shift(self.radius + EPSILON, angle))
+            angle += ANGLE_STEP
+        boundary1.append(self.center.shift(self.radius + EPSILON, great_angle))
 
-        return boundary
+        # clockwise boundary
+        boundary2 = []
+        angle = great_angle
+        while angle > small_angle:
+            boundary2.append(self.center.shift(self.radius + EPSILON, angle))
+            angle -= ANGLE_STEP
+        boundary2.append(self.center.shift(self.radius + EPSILON, small_angle))
+
+        # choose shorter boundary
+        return min([boundary1, boundary2], key=_compute_path_length)
 
     def get_buffered_boundary(self, buffer: float = 1) -> List[Coord]:
         X, Y = self.center.buffer(self.radius + buffer, resolution=BUFFER_RESOLUTION).exterior.coords.xy
