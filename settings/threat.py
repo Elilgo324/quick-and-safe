@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from shapely.geometry import Point, Polygon
 
+from algorithms.geometric import calculate_directional_angle_of_line
 from settings.coord import Coord
 
 ANGLE_STEP = math.pi / 20
@@ -43,8 +44,8 @@ class Threat:
         return self._boundary
 
     def get_boundary_between(self, start: Coord, end: Coord) -> List[Coord]:
-        angle1 = math.atan2(start.y - self.center.y, start.x - self.center.x)
-        angle2 = math.atan2(end.y - self.center.y, end.x - self.center.x)
+        angle1 = calculate_directional_angle_of_line(start=self.center, end=start)
+        angle2 = calculate_directional_angle_of_line(start=self.center, end=end)
 
         small_angle = min(angle1, angle2)
         great_angle = max(angle1, angle2)
