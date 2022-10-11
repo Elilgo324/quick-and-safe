@@ -7,18 +7,40 @@ from shapely.geometry import Point
 class Coord(Point):
     @property
     def xy(self) -> Tuple[float, float]:
+        """Gets the x,y of the coordinate
+
+        :return: the x,y of the coordinate
+        """
         return self.x, self.y
 
     def shift(self, distance: float, angle: float) -> 'Coord':
+        """Shifts the coord by a given distance and angle
+
+        :param distance: the distance
+        :param angle: the angle
+        :return: the shifted coord by a given distance and angle
+        """
         x = distance * math.cos(angle)
         y = distance * math.sin(angle)
         return Coord(self.x + x, self.y + y)
 
     def is_left_side_of_line(self, line_point1: 'Coord', line_point2: 'Coord') -> bool:
+        """Checks if a given segment and this coord makes a left turn
+
+        :param line_point1: the first point of the segment
+        :param line_point2: the second point of the segment
+        :return:
+        """
         return (line_point2.x - line_point1.x) * (self.y - line_point1.y) \
                - (line_point2.y - line_point1.y) * (self.x - line_point1.x) > 0
 
     def contact_points_with_circle(self, center: 'Coord', radius: float) -> Tuple['Coord', 'Coord']:
+        """Computes the two contact points of this coord and a circle
+
+        :param center: the center of the circle
+        :param radius: the radius of the circle
+        :return: the contact points of this coord and the circle
+        """
         # angle of pc line
         pc_angle = math.atan2(center.y - self.y, center.x - self.x) + math.pi
 

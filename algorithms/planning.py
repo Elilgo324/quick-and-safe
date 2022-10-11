@@ -160,7 +160,99 @@ def single_threat_shortest_path_with_risk_constraint(
 
 
 def single_threat_safest_path_with_length_constraint(
-        source: Coord, target: Coord, threat: Threat, length_limit: float) -> Tuple[List[Coord], float, float]:
+        source: Coord, target: Coord, threat: Threat, length_limit: float
+) -> Tuple[List[Coord], float, float]:
+    """Computes the safest path under a length budget considering one threat
+
+    There are three cases:
+    1. if safe path is possible, do it. else:
+    2. if length limit is less than the distance between the contact points,
+       the path consists a chord of length as the limit no matter where between the contact points. else:
+    3. the path consists a chord of total length as the limit is found by derivation of some function
+
+    :param source: the source of the path
+    :param target: the target of the path
+    :param threat: the single threat
+    :param length_limit: the length limit
+    :return: the shortest path under the risk budget, its length and its risk
+    """
+    print(f'planning with length limit {length_limit}...')
+
+    # check case 1
+    path, length, risk = safest_path_single_threat(source, target, threat)
+    if length <= length_limit:
+        print('safe path between source and target is possible')
+        return path, length, 0
+
+    # compute the contact points and their distance
+    s_contact1, s_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
+    t_contact2, t_contact1 = target.contact_points_with_circle(threat.center, threat.radius)
+    s_contact, t_contact = min(zip([s_contact1, s_contact2], [t_contact1, t_contact2]),
+                               key=lambda uv: uv[0].distance(uv[1]))
+
+    contact_distance = s_contact.distance(t_contact)
+    length_via_contact = source.distance(s_contact) + contact_distance + target.distance(t_contact)
+
+    center = threat.center
+    radius = threat.radius
+
+    # check case 2
+    if length_via_contact <= length_limit:
+        print(f'the length limit {length_limit} is greater than the path via contact points {round(length_via_contact, 2)}')
+
+        # TBD
+        chord_length = length_limit - source.distance(s_contact)
+        p1, p2 = calculate_points_in_distance_on_circle(center, radius, s_contact, 0)
+        p = min([p1, p2], key=lambda p: p.distance(t_contact))
+        boundary_between_points = threat.get_boundary_between(p, t_contact)
+
+        # if the boundary between points is flipped
+        if boundary_between_points[0].distance(source) > boundary_between_points[-1].distance(source):
+            boundary_between_points = boundary_between_points[::-1]
+
+        path = [source] + boundary_between_points + [target]
+
+        return path, length_limit, chord_length
+
+    # solving case 3
+    # beta = calculate_angle_on_chord(risk_limit, radius)
+    #
+    # def L1(theta: float) -> float:
+    #     entry_point = center.shift(distance=radius, angle=theta)
+    #     exit_point = center.shift(distance=radius, angle=theta + beta)
+    #     return source.distance(entry_point) + risk_limit + target.distance(exit_point)
+    #
+    # def L2(theta: float) -> float:
+    #     entry_point = center.shift(distance=radius, angle=theta)
+    #     exit_point = center.shift(distance=radius, angle=theta - beta)
+    #     return source.distance(entry_point) + risk_limit + target.distance(exit_point)
+    #
+    # p1, p2 = calculate_points_in_distance_on_circle(center, radius, t_contact, risk_limit)
+    # chord_start_of_t_contact = min([p1, p2], key=lambda p: p.distance(source))
+    #
+    # L_range = (calculate_directional_angle_of_line(start=center, end=s_contact),
+    #            calculate_directional_angle_of_line(start=center, end=chord_start_of_t_contact))
+    # L_range = L_range if L_range[0] < L_range[1] else (L_range[1], L_range[0])
+    #
+    # # if passing through x-axis
+    # if L_range[0] + math.pi < L_range[1]:
+    #     L_range = (L_range[1], L_range[0] + 2 * math.pi)
+    #
+    # theta1 = min(np.arange(L_range[0], L_range[1], 0.01), key=lambda theta: L1(theta))
+    # theta2 = min(np.arange(L_range[0], L_range[1], 0.01), key=lambda theta: L2(theta))
+    #
+    # theta = theta1
+    # exit_point_angle = theta + beta
+    #
+    # if L1(theta1) > L2(theta2):
+    #     theta = theta2
+    #     exit_point_angle = theta - beta
+    #
+    # entry_point = center.shift(distance=radius, angle=theta)
+    # exit_point = center.shift(distance=radius, angle=exit_point_angle)
+    #
+    # path = [source, entry_point, exit_point, target]
+    # return path, compute_path_length(path), risk_limit
     pass
 
 
@@ -172,31 +264,3 @@ def multiple_threats_safest_path_with_length_constraint(
 def multiple_threats_shortest_path_with_risk_constraint(
         source: Coord, target: Coord, threats: Tuple[Threat], risk_limit: float) -> Tuple[List[Coord], float, float]:
     pass
-
-
-if __name__ == '__main__':
-    target = Coord(-5, 3)
-    source = Coord(20, 3)
-    threat = Threat(center=Coord(8, 4), radius=3)
-
-    plt.scatter([source.x, target.x], [source.y, target.y])
-    plt.plot([p.x for p in threat.boundary], [p.y for p in threat.boundary])
-
-    plt.gca().set_aspect('equal', adjustable='box')
-
-    # path, length, risk = single_threat_shortest_path_with_risk_constraint(source, target, threat, 1)
-    # plt.plot([p.x for p in path], [p.y for p in path], color='orange')
-    # print(length)
-    # print(risk)
-
-    # path, length, risk = single_threat_shortest_path_with_risk_constraint(source, target, threat, 4)
-    # plt.plot([p.x for p in path], [p.y for p in path], color='green')
-    # print(length)
-    # print(risk)
-
-    path, length, risk = single_threat_shortest_path_with_risk_constraint(source, target, threat, 5)
-    print(length)
-    print(risk)
-    plt.plot([p.x for p in path], [p.y for p in path], color='red')
-
-    plt.show()

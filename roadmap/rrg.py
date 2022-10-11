@@ -24,9 +24,8 @@ class RRG(Roadmap):
     def _nearest(self, point: Coord) -> Coord:
         return min([Coord(*p) for p in self.graph.nodes], key=lambda p:point.distance(p))
 
-    def add_samples(self, iterations: int) -> float:
-        start = time()
-        for _ in tqdm(range(iterations)):
+    def add_samples(self, iterations: int) -> None:
+        for _ in range(iterations):
             sample = self._environment.sample(is_safe_sample=False)
             nearest = self._nearest(sample)
 
@@ -37,7 +36,5 @@ class RRG(Roadmap):
 
             near = self._near(steered_sample)
             self._add_edges([(steered_sample, node) for node in near])
-
-        return round(time() - start, 3)
 
 

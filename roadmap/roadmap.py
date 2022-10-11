@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC
 from time import time
 from itertools import combinations
@@ -14,8 +15,13 @@ import matplotlib.pyplot as plt
 EPSILON = 0.0000001
 LAYER_GRANULARITY = 1
 
+
 class Roadmap(ABC):
     def __init__(self, environment: Environment) -> None:
+        """Init roadmap
+
+        :param environment: the environment
+        """
         self._environment = environment
 
         # init graph with source and target
@@ -24,21 +30,33 @@ class Roadmap(ABC):
 
     @property
     def graph(self) -> nx.Graph():
+        """Gets the graph of the roadmap
+
+        :return: the graph of the roadmap
+        """
         return self._graph
 
     def merge_graph(self, other: nx.Graph, merge_radius: float = 10) -> None:
+        """Merges other graph with the roadmap's graph by a given radius
+
+        :param other: other graph
+        :param merge_radius: radius to connect nodes from both graphs
+        """
         # add all edges from other graph
-        self._add_edges([(Coord(*u), Coord(*v)) for u,v in other.edges])
+        self._add_edges([(Coord(*u), Coord(*v)) for u, v in other.edges])
 
         # add edge between close nodes from the graphs
-        for u in other.nodes:
-            u = Coord(*u)
-            for v in self.graph.nodes:
-                v = Coord(*v)
-                if u.distance(v) < merge_radius:
-                    self._add_edges([(u, v)])
+        for u, v in itertools.product(self.graph.nodes, other.nodes):
+            u, v = Coord(*u), Coord(*v)
+            if u.distance(v) < merge_radius:
+                self._add_edges([(u, v)])
 
     def _compute_path_length_and_risk(self, path: List[Coord]) -> Tuple[float, float]:
+        """Computes the length and the risk of a given path
+
+        :param path: the path
+        :return: the length and the risk of the path
+        """
         path_length = path_risk = 0
         for p1, p2 in zip(path[:-1], path[1:]):
             path_length += self._graph[p1.xy][p2.xy]['length']
@@ -46,6 +64,11 @@ class Roadmap(ABC):
         return round(path_length, 3), round(path_risk, 3)
 
     def refine_path(self, path: List[Coord]) -> List[Coord]:
+        """Refines path with shortcuts if available
+
+        :param path: the path
+        :return: path with shortcuts if available
+        """
         # compute risks table in O(path)
         risk_up_to = {point: 0 for point in path}
         for prev_p, cur_p in zip(path[:-1], path[1:]):
@@ -65,20 +88,32 @@ class Roadmap(ABC):
         return path
 
     def _add_points(self, points: List[Coord]) -> None:
+        """Adds points to roadmap
+
+        :param points: points to add
+        """
         self._graph.add_nodes_from([point.xy for point in points])
 
     def _add_edges(self, edges: List[Tuple[Coord, Coord]]) -> None:
-        for edge in edges:
-            p1, p2 = edge
-            attributes = self._environment.compute_segment_attributes(p1, p2)
-            self._add_points([p1, p2])
+        """Adds edges to roadmap
+
+        :param edges: edges to add
+        """
+        for (u, v) in edges:
+            attributes = self._environment.compute_segment_attributes(u, v)
+            self._add_points([u, v])
 
             # add epsilon * length to risk in order to prefer shorter paths with same risk
-            self._graph.add_edge(p1.xy, p2.xy,
+            self._graph.add_edge(u.xy, v.xy,
                                  length=attributes['length'],
                                  risk=attributes['risk'] + EPSILON * attributes['length'])
 
     def shortest_path(self, weight: str = 'length') -> Tuple[List[Coord], float, float, float]:
+        """Computes the shortest path according given weight
+
+        :param weight: a given weight
+        :return: the shortest path according given weight
+        """
         source, target = self._environment.source.xy, self._environment.target.xy
 
         start = time()
@@ -90,6 +125,14 @@ class Roadmap(ABC):
 
     def constrained_shortest_path(self, weight: str = 'length', constraint: str = 'risk', budget: float = 0) -> Tuple[
         List[Coord], float, float, float]:
+        """Computes the constrained shortest path given a weight, a constraint and a budget
+        This function uses a non-accurate and time expensive logic of layers graph
+
+        :param weight: the weight
+        :param constraint: the constraint
+        :param budget: the constraint budget
+        :return: the constrained shortest path
+        """
         source, target = self._environment.source.xy, self._environment.target.xy
 
         start = time()
@@ -128,6 +171,10 @@ class Roadmap(ABC):
         return path, path_length, path_risk, round(computation_time, 3)
 
     def plot(self, display_edges: bool = False) -> None:
+        """Plots environment and graph
+
+        :param display_edges: if to display the edges of the graph
+        """
         # plot settings
         self._environment.plot()
 
