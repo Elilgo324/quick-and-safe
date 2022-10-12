@@ -10,12 +10,10 @@ import math
 from settings.environment import Environment
 from settings.threat import Threat
 from algorithms.geometric import is_left_side_of_line, \
-    calculate_angle_on_chord, calculate_angle_of_line, calculate_directional_angle_of_line, \
+    calculate_angle_on_chord, calculate_non_directional_angle_of_line, calculate_directional_angle_of_line, \
     calculate_points_in_distance_on_circle
 from settings.coord import Coord
 from settings.threat import Threat
-
-EPSILON = 7
 
 
 def compute_path_length(path: List[Coord]) -> float:
@@ -54,12 +52,16 @@ def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> T
     target_contact1, target_contact2 = target.contact_points_with_circle(threat.center, threat.radius)
 
     # possible path from one side of the threat
-    edge_points1 = [p for p in threat.boundary if not is_left_side_of_line(source_contact1, target_contact1, p)]
-    potential_path1 = [source, source_contact1] + edge_points1 + [target_contact1, target]
+    target_contact_of_source_contact1 = min([target_contact1, target_contact2],
+                                            key=lambda c: c.distance(source_contact1))
+    potential_path1 \
+        = [source] + threat.get_boundary_between(source_contact1, target_contact_of_source_contact1) + [target]
 
     # possible path from the other side of the threat
-    edge_points2 = [p for p in threat.boundary if is_left_side_of_line(source_contact2, target_contact2, p)]
-    potential_path2 = [source, source_contact2] + edge_points2 + [target_contact2, target]
+    target_contact_of_source_contact2 = target_contact1 \
+        if target_contact1 is not target_contact_of_source_contact1 else target_contact2
+    potential_path2 \
+        = [source] + threat.get_boundary_between(source_contact2, target_contact_of_source_contact2) + [target]
 
     # return the minimal path between the two
     min_path = min([potential_path1, potential_path2], key=lambda path: compute_path_length(path))
@@ -108,13 +110,8 @@ def single_threat_shortest_path_with_risk_constraint(
 
         p1, p2 = calculate_points_in_distance_on_circle(center, radius, s_contact, risk_limit)
         p = min([p1, p2], key=lambda p: p.distance(t_contact))
-        boundary_between_points = threat.get_boundary_between(p, t_contact)
 
-        # if the boundary between points is flipped
-        if boundary_between_points[0].distance(source) > boundary_between_points[-1].distance(source):
-            boundary_between_points = boundary_between_points[::-1]
-
-        path = [source] + boundary_between_points + [target]
+        path = [source] + threat.get_boundary_between(p, t_contact) + [target]
 
         return path, compute_path_length(path), risk_limit
 
@@ -198,7 +195,8 @@ def single_threat_safest_path_with_length_constraint(
 
     # check case 2
     if length_via_contact <= length_limit:
-        print(f'the length limit {length_limit} is greater than the path via contact points {round(length_via_contact, 2)}')
+        print(
+            f'the length limit {length_limit} is greater than the path via contact points {round(length_via_contact, 2)}')
 
         # TBD
         chord_length = length_limit - source.distance(s_contact)

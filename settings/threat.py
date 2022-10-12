@@ -84,6 +84,7 @@ class Threat:
             boundary1.append(self.center.shift(self.radius, angle))
             angle += Threat.ANGLE_STEP
         boundary1.append(self.center.shift(self.radius, great_angle))
+        boundary1 = boundary1[::-1] if not boundary1[0].almost_equal(start) else boundary1
 
         # clockwise boundary
         boundary2 = []
@@ -92,6 +93,7 @@ class Threat:
             boundary2.append(self.center.shift(self.radius, angle))
             angle -= Threat.ANGLE_STEP
         boundary2.append(self.center.shift(self.radius, small_angle))
+        boundary2 = boundary2[::-1] if not boundary2[0].almost_equal(start) else boundary2
 
         # choose shorter boundary
         return min([boundary1, boundary2], key=_compute_path_length)

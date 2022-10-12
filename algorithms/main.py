@@ -50,5 +50,5 @@ def one_threat_under_length_budget():
 
 
 if __name__ == '__main__':
-    # one_threat_under_risk_budget()
+    one_threat_under_risk_budget()
     one_threat_under_length_budget()

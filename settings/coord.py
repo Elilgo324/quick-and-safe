@@ -29,7 +29,7 @@ class Coord(Point):
 
         :param line_point1: the first point of the segment
         :param line_point2: the second point of the segment
-        :return:
+        :return: if a given segment and this coord makes a left turn
         """
         return (line_point2.x - line_point1.x) * (self.y - line_point1.y) \
                - (line_point2.y - line_point1.y) * (self.x - line_point1.x) > 0
@@ -64,3 +64,12 @@ class Coord(Point):
 
     def __str__(self):
         return f'Coord({self.x},{self.y})'
+
+    def almost_equal(self, other: 'Coord', epsilon: float = 1e-5) -> bool:
+        """Checks if other coord is almost equal to this coord up to some epsilon
+
+        :param other: other coord
+        :param epsilon: epsilon for equality check
+        :return: if other coord is almost equal to this coord
+        """
+        return abs(self.x - other.x) < epsilon and abs(self.y - other.y) < epsilon
