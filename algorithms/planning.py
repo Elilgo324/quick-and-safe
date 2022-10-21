@@ -39,6 +39,24 @@ def shortest_path_single_threat(source: Coord, target: Coord, threat: Threat) ->
     return [source, target], source_target_line.length, threat_intersection.length
 
 
+def shortest_path_multiple_threats(source: Coord, target: Coord, threats: List[Threat]) -> Tuple[
+    List[Coord], float, float]:
+    """Computes the shortest path with multiple threats in the environment
+
+    :param source: the source of the path
+    :param target: the target of the path
+    :param threats: the threats
+    :return: the shortest path, its length and its risk
+    """
+    source_target_line = LineString([source, target])
+
+    threat_intersection_length = LineString(source_target_line.intersection(threats[0].polygon)).length
+    for threat in threats[1:]:
+        threat_intersection_length += LineString(source_target_line.intersection(threat.polygon)).length
+
+    return [source, target], source_target_line.length, threat_intersection_length
+
+
 def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> Tuple[List[Coord], float, float]:
     """Computes the safest path with single threat in the environment
 
@@ -260,5 +278,47 @@ def multiple_threats_safest_path_with_length_constraint(
 
 
 def multiple_threats_shortest_path_with_risk_constraint(
-        source: Coord, target: Coord, threats: Tuple[Threat], risk_limit: float) -> Tuple[List[Coord], float, float]:
-    pass
+        source: Coord, target: Coord, threats: List[Threat], risk_limit: float, budgets) -> Tuple[List[Coord], float, float]:
+    threat1, threat2 = threats
+    centers_line = LineString([threat1.center, threat2.center])
+    centers_angle = calculate_directional_angle_of_line(threat1.center, threat2.center)
+    separation_angle = centers_angle + 0.5 * math.pi
+    ch = threat1.polygon.union(threat2.polygon).convex_hull
+
+    mid_mid_target = centers_line.intersection(threat1.polygon.exterior)
+    mid_mid_target = Coord(mid_mid_target.x, mid_mid_target.y).shift(distance=0.01, angle=centers_angle)
+
+    mid_targets = []
+    i = 0
+    while True:
+        shifted = mid_mid_target.shift(distance=i, angle=separation_angle)
+        if not ch.contains(shifted):
+            break
+        mid_targets.append(shifted)
+        i += 0.1
+
+    i = 0
+    while True:
+        shifted = mid_mid_target.shift(distance=i, angle=separation_angle + math.pi)
+        if not ch.contains(shifted):
+            break
+        mid_targets.append(shifted)
+        i += 0.1
+
+    plt.scatter([p.x for p in mid_targets], [p.y for p in mid_targets])
+
+    optional_paths = {mid_target: None for mid_target in mid_targets}
+
+    for mid_target in mid_targets:
+        path_to, length_to, risk_to = single_threat_shortest_path_with_risk_constraint(
+            source, mid_target, threat1, risk_limit * budgets[0])
+        path_from, length_from, risk_from = single_threat_shortest_path_with_risk_constraint(
+            mid_target, target, threat2, risk_limit * budgets[1])
+        optional_paths[mid_target] = {'path': path_to + path_from,
+                                      'length': length_to + length_from,
+                                      'risk': risk_to + risk_from}
+
+    min_mid_target = min(mid_targets, key=lambda t: optional_paths[t]['length'])
+    return optional_paths[min_mid_target]['path'], \
+           optional_paths[min_mid_target]['length'], \
+           optional_paths[min_mid_target]['risk']

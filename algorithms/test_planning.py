@@ -1,5 +1,8 @@
 import math
 
+from shapely.geometry import LineString
+from shapely.ops import nearest_points
+
 from algorithms.planning import shortest_path_single_threat, safest_path_single_threat, compute_path_length, \
     single_threat_shortest_path_with_risk_constraint
 from settings.coord import Coord
@@ -35,18 +38,20 @@ def test_safest_path_single_threat():
                + target.distance(threat.polygon) \
                + 0.5 * compute_path_length(threat.boundary)
 
+
 def test_single_threat_shortest_path_with_risk_constraint():
-    source = Coord(100,100)
-    target = Coord(-200,90)
+    source = Coord(100, 100)
+    target = Coord(-200, 90)
     budget = 5
     path, length, risk \
         = single_threat_shortest_path_with_risk_constraint(source, target, threat, budget)
 
+    assert path == [source, target]
     assert length == source.distance(target)
     assert risk == 0
 
-    source = Coord(-1,4)
-    target = Coord(10,4)
+    source = Coord(-1, 4)
+    target = Coord(10, 4)
     budget = 2 * threat.radius + 1
     path, length, risk \
         = single_threat_shortest_path_with_risk_constraint(source, target, threat, budget)
@@ -61,14 +66,34 @@ def test_single_threat_shortest_path_with_risk_constraint():
         = single_threat_shortest_path_with_risk_constraint(source, target, threat, budget)
     s_path, s_length, s_risk = safest_path_single_threat(source, target, threat)
 
-    plt.plot([p.x for p in s_path], [p.y for p in s_path], zorder=15)
-    plt.plot([p.x for p in threat.boundary], [p.y for p in threat.boundary])
-    plt.show()
-
-
     assert path == s_path
     assert length == s_length
     assert risk == s_risk
+
+    source = Coord(3, 10)
+    target = Coord(3, -5)
+    budget = 2 * threat.radius - 1
+    path, length, risk \
+        = single_threat_shortest_path_with_risk_constraint(source, target, threat, budget)
+
+    one_after_source = path[1]
+    one_before_target = path[-2]
+    st_segment = LineString([source, target])
+
+    assert risk == budget
+    assert one_after_source.distance(nearest_points(st_segment, one_after_source)[0]) \
+           < one_before_target.distance(nearest_points(st_segment, one_before_target)[0])
+
+    target = Coord(3, -1)
+    path, length, risk \
+        = single_threat_shortest_path_with_risk_constraint(source, target, threat, budget)
+
+    one_after_source = path[1]
+    one_before_target = path[-2]
+    st_segment = LineString([source, target])
+
+    assert one_after_source.distance(nearest_points(st_segment, one_after_source)[0]) \
+           > one_before_target.distance(nearest_points(st_segment, one_before_target)[0])
 
 
 if __name__ == '__main__':
