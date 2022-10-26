@@ -3,7 +3,7 @@ from random import randint
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point, Polygon, LineString
 
 from algorithms.geometric import calculate_directional_angle_of_line
 from settings.coord import Coord
@@ -16,7 +16,7 @@ def _compute_path_length(path: List[Coord]) -> float:
 class Threat:
     ANGLE_STEP = math.pi / 20
     BUFFER_RESOLUTION = 20
-    EPSILON = 0.03
+    EPSILON = 2
 
     def __init__(self, center: Coord, radius: float) -> None:
         """Init threat by center and radius
@@ -81,22 +81,31 @@ class Threat:
         boundary1 = []
         angle = small_angle
         while angle < great_angle:
-            boundary1.append(self.center.shift(self.radius, angle))
+            boundary1.append(self.center.shift(self.radius + Threat.EPSILON, angle))
             angle += Threat.ANGLE_STEP
-        boundary1.append(self.center.shift(self.radius, great_angle))
-        boundary1 = boundary1[::-1] if not boundary1[0].almost_equal(start) else boundary1
+        boundary1.append(self.center.shift(self.radius + Threat.EPSILON, great_angle))
+        boundary1 = boundary1[::-1] if not boundary1[0].almost_equal(start, 2 * Threat.EPSILON) else boundary1
 
         # clockwise boundary
         boundary2 = []
         angle = great_angle
         while angle > small_angle:
-            boundary2.append(self.center.shift(self.radius, angle))
+            boundary2.append(self.center.shift(self.radius + Threat.EPSILON, angle))
             angle -= Threat.ANGLE_STEP
-        boundary2.append(self.center.shift(self.radius, small_angle))
-        boundary2 = boundary2[::-1] if not boundary2[0].almost_equal(start) else boundary2
+        boundary2.append(self.center.shift(self.radius + Threat.EPSILON, small_angle))
+        boundary2 = boundary2[::-1] if not boundary2[0].almost_equal(start, 2 * Threat.EPSILON) else boundary2
 
         # choose shorter boundary
         return min([boundary1, boundary2], key=_compute_path_length)
+
+    def compute_path_risk(self, path: List[Coord]) -> float:
+        """Computes the risk of the path considering this threat
+
+        :param path: the path
+        :return: the risk of the path considering this threat
+        """
+        segments = [LineString([c1, c2]) for c1, c2 in zip(path[:-1], path[1:])]
+        return sum([self.polygon.interior.intersection(segment).length for segment in segments])
 
     @classmethod
     def generate_random_threat(cls, environment_range: Tuple[int, int], radius_range: Tuple[int, int] = (100, 200)) \

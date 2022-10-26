@@ -103,14 +103,13 @@ def single_threat_shortest_path_with_risk_constraint(
     :param risk_limit: the risk limit
     :return: the shortest path under the risk budget, its length and its risk
     """
-    print(f'planning with risk limit {risk_limit}...')
+    print(f'planning with risk limit {risk_limit} via one threat...')
 
     # check case 1
-    st_line = LineString([source, target])
-    risk_of_st_path = threat.polygon.intersection(st_line).length
+    risk_of_st_path = threat.compute_path_risk([source, target])
     if risk_of_st_path <= risk_limit:
-        print('straight line between source and target is possible')
-        return [source, target], st_line.length, risk_of_st_path
+        print('case 1: straight line between source and target is possible')
+        return [source, target], source.distance(target), risk_of_st_path
 
     # compute the contact points and their distance
     s_contact1, s_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
@@ -124,16 +123,17 @@ def single_threat_shortest_path_with_risk_constraint(
 
     # check case 2
     if contact_distance >= risk_limit:
-        print(f'the risk limit {risk_limit} is under the contact points distance {round(contact_distance, 2)}')
+        print(f'case 2: the risk limit {risk_limit} is under the contact points distance {round(contact_distance, 2)}')
 
         p1, p2 = calculate_points_in_distance_on_circle(center, radius, s_contact, risk_limit)
         p = min([p1, p2], key=lambda p: p.distance(t_contact))
 
         path = [source] + threat.get_boundary_between(p, t_contact) + [target]
 
-        return path, compute_path_length(path), risk_limit
+        return path, compute_path_length(path), threat.compute_path_risk(path)
 
     # solving case 3
+    print(f'case 3: the risk limit {risk_limit} is over the contact points distance {round(contact_distance, 2)}')
     beta = calculate_angle_on_chord(risk_limit, radius)
 
     def L1(theta: float) -> float:
@@ -171,7 +171,7 @@ def single_threat_shortest_path_with_risk_constraint(
     exit_point = center.shift(distance=radius, angle=exit_point_angle)
 
     path = [source, entry_point, exit_point, target]
-    return path, compute_path_length(path), risk_limit
+    return path, compute_path_length(path), threat.compute_path_risk(path)
 
 
 def single_threat_safest_path_with_length_constraint(
@@ -286,7 +286,8 @@ def multiple_threats_shortest_path_with_risk_constraint(
     ch = threat1.polygon.union(threat2.polygon).convex_hull
 
     mid_mid_target = centers_line.intersection(threat1.polygon.exterior)
-    mid_mid_target = Coord(mid_mid_target.x, mid_mid_target.y).shift(distance=0.01, angle=centers_angle)
+    distance_between_threats = threat1.center.distance(threat2.center) - (threat1.radius + threat2.radius)
+    mid_mid_target = Coord(mid_mid_target.x, mid_mid_target.y).shift(distance=0.5 * distance_between_threats, angle=centers_angle)
 
     mid_targets = []
     i = 0
@@ -295,7 +296,7 @@ def multiple_threats_shortest_path_with_risk_constraint(
         if not ch.contains(shifted):
             break
         mid_targets.append(shifted)
-        i += 0.1
+        i += 10
 
     i = 0
     while True:
@@ -303,7 +304,7 @@ def multiple_threats_shortest_path_with_risk_constraint(
         if not ch.contains(shifted):
             break
         mid_targets.append(shifted)
-        i += 0.1
+        i += 10
 
     plt.scatter([p.x for p in mid_targets], [p.y for p in mid_targets])
 

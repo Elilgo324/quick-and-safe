@@ -56,13 +56,12 @@ class Environment:
         return self._threats
 
     @property
-    def threats_polygons_inside(self) -> List[Polygon]:
+    def threats_polygons(self) -> List[Polygon]:
         """The threats polygons in the environment
-        The polygons are buffered inside so a path on the exterior is safe
 
         :return: the threats polygons in the environment
         """
-        return [threat.polygon.buffer(distance=-Threat.EPSILON) for threat in self._threats]
+        return [threat.polygon for threat in self._threats]
 
     @property
     def source(self) -> Coord:
@@ -94,7 +93,7 @@ class Environment:
         :param point: a point
         :return: if the point is inside threat
         """
-        for threat in self.threats_polygons_inside:
+        for threat in self.threats_polygons:
             if threat.contains(point):
                 return False
         return True
@@ -107,7 +106,7 @@ class Environment:
         :return: if the edge does not intersect threat
         """
         line = LineString([u, v])
-        for threat_polygon in self.threats_polygons_inside:
+        for threat_polygon in self.threats_polygons:
             if line.intersects(threat_polygon):
                 return False
         return True
@@ -126,7 +125,7 @@ class Environment:
         """
         for _ in range(num_threats):
             new_threat = Threat.generate_non_intersecting_random_threat(
-                self.threats_polygons_inside, (self.x_range, self.y_range))
+                self.threats_polygons, (self.x_range, self.y_range))
             self._threats.append(new_threat)
 
     def compute_segment_attributes(self, u: Coord, v: Coord) -> Dict[str, float]:
@@ -138,7 +137,7 @@ class Environment:
         """
         segment = LineString([u, v])
         return {'length': segment.length,
-                'risk': sum([segment.intersection(threat).length for threat in self.threats_polygons_inside])}
+                'risk': sum([threat.compute_path_risk([u, v]) for threat in self.threats])}
 
     def compute_path_attributes(self, path: List[Coord]) -> Dict[str, float]:
         """Computes the attributes of a given path
