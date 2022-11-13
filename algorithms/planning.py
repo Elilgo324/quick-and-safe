@@ -8,10 +8,11 @@ from shapely.geometry import LineString, Point
 from scipy.optimize import minimize_scalar
 import math
 from settings.environment import Environment
+from settings.segment import Segment
 from settings.threat import Threat
 from algorithms.geometric import is_left_side_of_line, \
     calculate_angle_on_chord, calculate_non_directional_angle_of_line, calculate_directional_angle_of_line, \
-    calculate_points_in_distance_on_circle
+    calculate_points_in_distance_on_circle, calculate_arc_length_on_chord
 from settings.coord import Coord
 from settings.threat import Threat
 
@@ -88,14 +89,14 @@ def safest_path_single_threat(source: Coord, target: Coord, threat: Threat) -> T
 
 def single_threat_shortest_path_with_risk_constraint(
         source: Coord, target: Coord, threat: Threat, risk_limit: float
-) -> Tuple[List[Coord], float, float]:
+) -> Tuple[List[Coord], float, float, int]:
     """Computes the shortest path under a risk budget considering one threat
 
     There are three cases:
     1. if straight path is possible, do it. else:
-    2. if risk limit is less than the distance between the contact points,
+    3. if risk limit is less than the distance between the contact points,
        the path consists a chord of length as the limit no matter where between the contact points. else:
-    3. the path consists a chord of length as the limit is found by derivation of some function
+    2. the path consists a chord of length as the limit is found by derivation of some function
 
     :param source: the source of the path
     :param target: the target of the path
@@ -109,7 +110,7 @@ def single_threat_shortest_path_with_risk_constraint(
     risk_of_st_path = threat.compute_path_risk([source, target])
     if risk_of_st_path <= risk_limit:
         print('case 1: straight line between source and target is possible')
-        return [source, target], source.distance(target), risk_of_st_path
+        return [source, target], source.distance(target), risk_of_st_path, 1
 
     # compute the contact points and their distance
     s_contact1, s_contact2 = source.contact_points_with_circle(threat.center, threat.radius)
@@ -121,19 +122,22 @@ def single_threat_shortest_path_with_risk_constraint(
     center = threat.center
     radius = threat.radius
 
-    # check case 2
+    # check case 3
     if contact_distance >= risk_limit:
-        print(f'case 2: the risk limit {risk_limit} is under the contact points distance {round(contact_distance, 2)}')
+        print(f'case 3: the risk limit {risk_limit} is under the contact points distance {round(contact_distance, 2)}')
 
         p1, p2 = calculate_points_in_distance_on_circle(center, radius, s_contact, risk_limit)
         p = min([p1, p2], key=lambda p: p.distance(t_contact))
 
-        path = [source] + threat.get_boundary_between(p, t_contact) + [target]
+        path = [source, s_contact] + threat.get_boundary_between(p, t_contact) + [target]
+        path_length = source.distance(s_contact) \
+                      + s_contact.distance(p) \
+                      + calculate_arc_length_on_chord(p.distance(t_contact), radius) \
+                      + t_contact.distance(target)
+        return path, path_length, risk_limit, 3
 
-        return path, compute_path_length(path), threat.compute_path_risk(path)
-
-    # solving case 3
-    print(f'case 3: the risk limit {risk_limit} is over the contact points distance {round(contact_distance, 2)}')
+    # solving case 2
+    print(f'case 2: the risk limit {risk_limit} is over the contact points distance {round(contact_distance, 2)}')
     beta = calculate_angle_on_chord(risk_limit, radius)
 
     def L1(theta: float) -> float:
@@ -171,7 +175,9 @@ def single_threat_shortest_path_with_risk_constraint(
     exit_point = center.shift(distance=radius, angle=exit_point_angle)
 
     path = [source, entry_point, exit_point, target]
-    return path, compute_path_length(path), threat.compute_path_risk(path)
+    path_length = source.distance(entry_point) + risk_limit + exit_point.distance(target)
+
+    return path, path_length, risk_limit, 2
 
 
 def single_threat_safest_path_with_length_constraint(
@@ -277,49 +283,55 @@ def multiple_threats_safest_path_with_length_constraint(
     pass
 
 
-def multiple_threats_shortest_path_with_risk_constraint(
-        source: Coord, target: Coord, threats: List[Threat], risk_limit: float, budgets) -> Tuple[List[Coord], float, float]:
+def two_threats_shortest_path_with_risk_constraint(
+        source: Coord, target: Coord, threats: List[Threat], risk_limit: float, budgets) -> Tuple[
+    List[Coord], float, float, Tuple]:
     threat1, threat2 = threats
-    centers_line = LineString([threat1.center, threat2.center])
-    centers_angle = calculate_directional_angle_of_line(threat1.center, threat2.center)
-    separation_angle = centers_angle + 0.5 * math.pi
-    ch = threat1.polygon.union(threat2.polygon).convex_hull
 
-    mid_mid_target = centers_line.intersection(threat1.polygon.exterior)
-    distance_between_threats = threat1.center.distance(threat2.center) - (threat1.radius + threat2.radius)
-    mid_mid_target = Coord(mid_mid_target.x, mid_mid_target.y).shift(distance=0.5 * distance_between_threats, angle=centers_angle)
+    centers_segment = Segment(threat1.center, threat2.center)
+    halfspace_angle = centers_segment.angle + 0.5 * math.pi
+    segment_between_threats = Segment(
+        centers_segment.start.shift(distance=threat1.radius, angle=centers_segment.angle),
+        centers_segment.end.shift(distance=threat2.radius, angle=centers_segment.angle + math.pi)
+    )
+    point_between_threats = segment_between_threats.midpoint
+
+    convex_hull = threat1.polygon.union(threat2.polygon).convex_hull
 
     mid_targets = []
     i = 0
     while True:
-        shifted = mid_mid_target.shift(distance=i, angle=separation_angle)
-        if not ch.contains(shifted):
+        shifted = point_between_threats.shift(distance=i, angle=halfspace_angle)
+        if not convex_hull.contains(shifted):
             break
         mid_targets.append(shifted)
-        i += 10
+        i += 5
 
-    i = 0
-    while True:
-        shifted = mid_mid_target.shift(distance=i, angle=separation_angle + math.pi)
-        if not ch.contains(shifted):
-            break
-        mid_targets.append(shifted)
-        i += 10
+    # i = 0
+    # while True:
+    #     shifted = mid_mid_target.shift(distance=i, angle=separation_angle + math.pi)
+    #     if not ch.contains(shifted):
+    #         break
+    #     mid_targets.append(shifted)
+    #     i += 1
 
     plt.scatter([p.x for p in mid_targets], [p.y for p in mid_targets])
 
     optional_paths = {mid_target: None for mid_target in mid_targets}
 
     for mid_target in mid_targets:
-        path_to, length_to, risk_to = single_threat_shortest_path_with_risk_constraint(
+        path_to, length_to, risk_to, case_first = single_threat_shortest_path_with_risk_constraint(
             source, mid_target, threat1, risk_limit * budgets[0])
-        path_from, length_from, risk_from = single_threat_shortest_path_with_risk_constraint(
+        path_from, length_from, risk_from, case_second = single_threat_shortest_path_with_risk_constraint(
             mid_target, target, threat2, risk_limit * budgets[1])
         optional_paths[mid_target] = {'path': path_to + path_from,
                                       'length': length_to + length_from,
-                                      'risk': risk_to + risk_from}
+                                      'risk': risk_to + risk_from,
+                                      'cases': [case_first, case_second]}
 
     min_mid_target = min(mid_targets, key=lambda t: optional_paths[t]['length'])
+
     return optional_paths[min_mid_target]['path'], \
            optional_paths[min_mid_target]['length'], \
-           optional_paths[min_mid_target]['risk']
+           optional_paths[min_mid_target]['risk'], \
+           optional_paths[min_mid_target]['cases']

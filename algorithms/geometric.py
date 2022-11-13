@@ -38,6 +38,16 @@ def calculate_angle_on_chord(chord: float, radius: float) -> float:
     return 2 * math.asin(0.5 * chord / radius)
 
 
+def calculate_arc_length_on_chord(chord: float, radius: float) -> float:
+    """Calculate the arc length of a given chord length
+
+    :param chord: the chord length
+    :param radius: the radius of the circle
+    :return: length on the arc supported by the chord
+    """
+    return calculate_angle_on_chord(chord, radius) * radius
+
+
 def calculate_non_directional_angle_of_line(line_point1: Coord, line_point2: Coord) -> float:
     """Calculate the non-directional angle of a line
 

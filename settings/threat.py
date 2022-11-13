@@ -14,9 +14,9 @@ def _compute_path_length(path: List[Coord]) -> float:
 
 
 class Threat:
-    ANGLE_STEP = math.pi / 20
-    BUFFER_RESOLUTION = 20
-    EPSILON = 2
+    ANGLE_STEP = math.pi / 40
+    BUFFER_RESOLUTION = 40
+    EPSILON = 0
 
     def __init__(self, center: Coord, radius: float) -> None:
         """Init threat by center and radius
@@ -84,7 +84,7 @@ class Threat:
             boundary1.append(self.center.shift(self.radius + Threat.EPSILON, angle))
             angle += Threat.ANGLE_STEP
         boundary1.append(self.center.shift(self.radius + Threat.EPSILON, great_angle))
-        boundary1 = boundary1[::-1] if not boundary1[0].almost_equal(start, 2 * Threat.EPSILON) else boundary1
+        boundary1 = boundary1[::-1] if not boundary1[0].almost_equal(start, 0.1) else boundary1
 
         # clockwise boundary
         boundary2 = []
@@ -93,7 +93,7 @@ class Threat:
             boundary2.append(self.center.shift(self.radius + Threat.EPSILON, angle))
             angle -= Threat.ANGLE_STEP
         boundary2.append(self.center.shift(self.radius + Threat.EPSILON, small_angle))
-        boundary2 = boundary2[::-1] if not boundary2[0].almost_equal(start, 2 * Threat.EPSILON) else boundary2
+        boundary2 = boundary2[::-1] if not boundary2[0].almost_equal(start, 0.1) else boundary2
 
         # choose shorter boundary
         return min([boundary1, boundary2], key=_compute_path_length)
@@ -105,7 +105,7 @@ class Threat:
         :return: the risk of the path considering this threat
         """
         segments = [LineString([c1, c2]) for c1, c2 in zip(path[:-1], path[1:])]
-        return sum([self.polygon.interior.intersection(segment).length for segment in segments])
+        return sum([self.polygon.intersection(segment).length for segment in segments])
 
     @classmethod
     def generate_random_threat(cls, environment_range: Tuple[int, int], radius_range: Tuple[int, int] = (100, 200)) \
