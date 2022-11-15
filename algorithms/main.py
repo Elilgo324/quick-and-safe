@@ -57,19 +57,19 @@ def two_symmetric_threats():
     plt.suptitle(title, fontsize=22, y=0.98)
     source = Coord(1, 5)
     target = Coord(1000, 5)
-    radius = 100
-    threat1 = Threat(center=Coord(300, 0), radius=radius)
-    threat2 = Threat(center=Coord(700, 0), radius=radius)
+    radius = 150
+    threat1 = Threat(center=Coord(280, 0), radius=radius)
+    threat2 = Threat(center=Coord(720, 0), radius=radius)
     risk_limits = [2 * radius, 2.1 * radius, 2.2 * radius, 2.3 * radius, 2.4 * radius, 2.5 * radius, 2.6 * radius, 2.7 * radius, 3 * radius]
     risk_limits = [1.8 * radius, 2 * radius, 2.3 * radius, 2.5 * radius, 2.7 * radius, 3 * radius]
-    # risk_limits = [radius]
+    risk_limits = [2.5 * radius]
     plt.subplot(2, 1, 2)
     plt.grid(True)
     plt.title('shortest paths')
 
     lengths = {}
     cases = {}
-    bs = np.arange(0, 1.01, 0.05)
+    bs = np.arange(0, 0.51, 0.1)
     for b in bs:
         budgets = [b, 1 - b]
 
@@ -101,12 +101,11 @@ def two_symmetric_threats():
     plt.plot([p.x for p in threat2.boundary], [p.y for p in threat2.boundary], color='blue')
 
     for risk_limit in risk_limits:
-        ib = min(range(len(bs)), key=lambda i: lengths[risk_limit][i])
-        b = bs[ib]
-        path, length, risk, _ = two_threats_shortest_path_with_risk_constraint(
-            source, target, [threat1, threat2], risk_limit, budgets=[b, 1 - b])
-        plt.plot([p.x for p in path], [p.y for p in path],
-                 label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+        for b in bs:
+            path, length, risk, _ = two_threats_shortest_path_with_risk_constraint(
+                source, target, [threat1, threat2], risk_limit, budgets=[b, 1 - b])
+            plt.plot([p.x for p in path], [p.y for p in path],
+                     label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
 
     plt.ylim(-175, 175)
     plt.legend(fontsize=12)
