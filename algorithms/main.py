@@ -52,65 +52,182 @@ def one_threat_under_length_budget():
 
 
 def two_symmetric_threats():
-    plt.figure(figsize=(10, 7))
-    title = 'scenario 1: two symmetric threats'
-    plt.suptitle(title, fontsize=22, y=0.98)
-    source = Coord(1, 5)
-    target = Coord(1000, 5)
+    legend_font = 10
+    source = Coord(0,1)
+    target = Coord(1000,0)
     radius = 150
-    threat1 = Threat(center=Coord(280, 0), radius=radius)
-    threat2 = Threat(center=Coord(720, 0), radius=radius)
-    risk_limits = [2 * radius, 2.1 * radius, 2.2 * radius, 2.3 * radius, 2.4 * radius, 2.5 * radius, 2.6 * radius, 2.7 * radius, 3 * radius]
-    risk_limits = [1.8 * radius, 2 * radius, 2.3 * radius, 2.5 * radius, 2.7 * radius, 3 * radius]
-    risk_limits = [2.5 * radius]
-    plt.subplot(2, 1, 2)
-    plt.grid(True)
-    plt.title('shortest paths')
 
+    plt.figure(figsize=(10, 8))
+
+    plt.suptitle('scenario 1: two symmetric threats', fontsize=22, y=0.98)
+
+    threat1_center = Coord(250,0)
+    threat2_center = Coord(1000-250,0)
+    risk_limit = 2 * radius
+
+    threat1 = Threat(center=threat1_center, radius=radius)
+    threat2 = Threat(center=threat2_center, radius=radius)
+
+    # find all results
     lengths = {}
     cases = {}
-    bs = np.arange(0, 0.51, 0.1)
+    bs = np.arange(0, 1.01, 0.125)
+
+    # plot shortest path in the environment
+    plt.subplot(2, 1, 1)
+    plt.grid(True)
+    plt.ylim([-200,200])
+    plt.ylabel('shortest path under budget and partition')
+
+    plt.scatter([source.x, target.x], [source.y, target.y])
+    plt.plot([p.x for p in threat1.boundary], [p.y for p in threat1.boundary], color='blue')
+    plt.plot([p.x for p in threat2.boundary], [p.y for p in threat2.boundary], color='blue')
+
+    for b in bs:
+        path, length, risk, cs = two_threats_shortest_path_with_risk_constraint(
+            source, target, [threat1, threat2], risk_limit, budgets=[b, 1 - b])
+        lengths[b] = length
+        cases[b] = cs
+        if b <= 0.5:
+            plt.plot([p.x for p in path], [p.y for p in path],
+                     label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+
+    plt.legend(fontsize=legend_font)
+
+    # plot length as function of budget partition
+    plt.subplot(2, 1, 2)
+    plt.grid(True)
+
+    plt.plot(bs, [lengths[b] for b in bs], label=f'risk limit {risk_limit}')
+    plt.scatter(bs, [lengths[b] for b in bs], color=plt.gca().lines[-1].get_color())
+    for b in bs:
+        plt.text(b, lengths[b], f'{cases[b][0]},{cases[b][1]}')
+
+    plt.xlabel('% budget to first threat')
+    plt.ylabel('distance')
+    plt.xlim([0, 1])
+    plt.ylim([min([lengths[b] for b in bs]), max([lengths[b] for b in bs])])
+    plt.legend(fontsize=legend_font)
+
+    plt.savefig(f'../plots/scenario 1 - two symmetric threats in different locations.png')
+
+
+def two_symmetric_threats_zoom_in():
+    legend_font = 10
+    source = Coord(0,1)
+    target = Coord(1000,0)
+    radius = 150
+
+    plt.figure(figsize=(20, 8))
+
+    plt.suptitle('scenario 1: two symmetric threats', fontsize=22, y=0.98)
+
+    threat1_center = Coord(250,0)
+    threat2_center = Coord(1000-250,0)
+
+    threat1 = Threat(center=threat1_center, radius=radius)
+    threat2 = Threat(center=threat2_center, radius=radius)
+
+    low_risk_limits = [350, 375, 400, 425, 450, 475, 500]
+    high_risk_limits = [450, 475, 500, 525, 550, 575, 600]
+
+    # plot shortest path in the environment
+    plt.subplot(2, 2, 1)
+    plt.grid(True)
+    plt.ylim([-200,200])
+    plt.ylabel('shortest path under budget')
+
+    plt.scatter([source.x, target.x], [source.y, target.y])
+    plt.plot([p.x for p in threat1.boundary], [p.y for p in threat1.boundary], color='blue')
+    plt.plot([p.x for p in threat2.boundary], [p.y for p in threat2.boundary], color='blue')
+
+    # find all results
+    lengths = {}
+    cases = {}
+    bs = np.arange(0, 1.01, 0.05)
     for b in bs:
         budgets = [b, 1 - b]
 
-        for risk_limit in risk_limits:
+        for risk_limit in low_risk_limits:
             path, length, risk, cs = two_threats_shortest_path_with_risk_constraint(
                 source, target, [threat1, threat2], risk_limit, budgets)
 
             lengths[risk_limit] = [length] if risk_limit not in lengths else lengths[risk_limit] + [length]
             cases[risk_limit] = [cs] if risk_limit not in cases else cases[risk_limit] + [cs]
 
-    for risk_limit in risk_limits:
-        plt.plot(bs, lengths[risk_limit], label=f'risk limit {risk_limit}', linestyle='--')
+    for risk_limit in low_risk_limits:
+        ib = min(range(len(bs)), key=lambda i: lengths[risk_limit][i])
+        b = bs[ib]
+        path, length, risk, _ = two_threats_shortest_path_with_risk_constraint(source, target, [threat1, threat2],
+                                                                               risk_limit, budgets=[b, 1 - b])
+        plt.plot([p.x for p in path], [p.y for p in path],
+                 label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+
+    plt.legend(fontsize=legend_font)
+
+    # plot length as function of budget partition
+    plt.subplot(2, 2, 3)
+    plt.grid(True)
+    for risk_limit in low_risk_limits:
+        plt.plot(bs, lengths[risk_limit], label=f'risk limit {risk_limit}')
         plt.scatter(bs, lengths[risk_limit], color=plt.gca().lines[-1].get_color())
         for x, y, cs in zip(bs, lengths[risk_limit], cases[risk_limit]):
             plt.text(x, y, f'{cs[0]},{cs[1]}')
 
     plt.xlabel('% budget to first threat')
     plt.ylabel('distance')
-    plt.ylim([min(lengths[risk_limits[-1]]), max(lengths[risk_limits[0]])])
     plt.xlim([0, 1])
-    plt.legend(loc='center left', bbox_to_anchor=(-0.03, 0.5))
+    plt.ylim([min(lengths[low_risk_limits[-1]]), max(lengths[low_risk_limits[0]])])
+    plt.legend(fontsize=legend_font)
 
-    plt.subplot(2, 1, 1)
+    # plot shortest path in the environment
+    plt.subplot(2, 2, 2)
     plt.grid(True)
-    plt.title('path length as function of first threat budget')
+    plt.ylim([-200, 200])
 
     plt.scatter([source.x, target.x], [source.y, target.y])
     plt.plot([p.x for p in threat1.boundary], [p.y for p in threat1.boundary], color='blue')
     plt.plot([p.x for p in threat2.boundary], [p.y for p in threat2.boundary], color='blue')
 
-    for risk_limit in risk_limits:
-        for b in bs:
-            path, length, risk, _ = two_threats_shortest_path_with_risk_constraint(
-                source, target, [threat1, threat2], risk_limit, budgets=[b, 1 - b])
-            plt.plot([p.x for p in path], [p.y for p in path],
-                     label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+    # find all results
+    lengths = {}
+    cases = {}
+    bs = np.arange(0, 1.01, 0.05)
+    for b in bs:
+        budgets = [b, 1 - b]
 
-    plt.ylim(-175, 175)
-    plt.legend(fontsize=12)
+        for risk_limit in high_risk_limits:
+            path, length, risk, cs = two_threats_shortest_path_with_risk_constraint(
+                source, target, [threat1, threat2], risk_limit, budgets)
 
-    plt.savefig(f'../plots/{title}.png')
+            lengths[risk_limit] = [length] if risk_limit not in lengths else lengths[risk_limit] + [length]
+            cases[risk_limit] = [cs] if risk_limit not in cases else cases[risk_limit] + [cs]
+
+    for risk_limit in high_risk_limits:
+        ib = min(range(len(bs)), key=lambda i: lengths[risk_limit][i])
+        b = bs[ib]
+        path, length, risk, _ = two_threats_shortest_path_with_risk_constraint(source, target, [threat1, threat2],
+                                                                               risk_limit, budgets=[b, 1 - b])
+        plt.plot([p.x for p in path], [p.y for p in path],
+                 label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+
+    plt.legend(fontsize=legend_font)
+
+    # plot length as function of budget partition
+    plt.subplot(2, 2, 4)
+    plt.grid(True)
+    for risk_limit in high_risk_limits:
+        plt.plot(bs, lengths[risk_limit], label=f'risk limit {risk_limit}')
+        plt.scatter(bs, lengths[risk_limit], color=plt.gca().lines[-1].get_color())
+        for x, y, cs in zip(bs, lengths[risk_limit], cases[risk_limit]):
+            plt.text(x, y, f'{cs[0]},{cs[1]}')
+
+    plt.xlabel('% budget to first threat')
+    plt.xlim([0, 1])
+    plt.ylim([min(lengths[high_risk_limits[-1]]), max(lengths[high_risk_limits[0]])])
+    plt.legend(fontsize=legend_font)
+
+    plt.savefig(f'../plots/scenario 1 - two symmetric threats zoom in.png')
 
 
 def same_threats_farther_source():
@@ -356,6 +473,7 @@ if __name__ == '__main__':
     # one_threat_under_risk_budget()
     # one_threat_under_length_budget()
     two_symmetric_threats()
+    # two_symmetric_threats_zoom_in()
     # same_threats_farther_source()
     # bigger_threat()
     # asymmetric_but_same_side()
