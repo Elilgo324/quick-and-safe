@@ -53,7 +53,7 @@ def one_threat_under_length_budget():
 
 def two_symmetric_threats():
     legend_font = 10
-    source = Coord(0,1)
+    source = Coord(0,0)
     target = Coord(1000,0)
     radius = 150
 
@@ -63,7 +63,7 @@ def two_symmetric_threats():
 
     threat1_center = Coord(250,0)
     threat2_center = Coord(1000-250,0)
-    risk_limit = 2 * radius
+    risk_limit = 460
 
     threat1 = Threat(center=threat1_center, radius=radius)
     threat2 = Threat(center=threat2_center, radius=radius)
@@ -71,7 +71,7 @@ def two_symmetric_threats():
     # find all results
     lengths = {}
     cases = {}
-    bs = np.arange(0, 1.01, 0.125)
+    bs = np.arange(0, 1.01, 0.05)
 
     # plot shortest path in the environment
     plt.subplot(2, 1, 1)
@@ -90,9 +90,9 @@ def two_symmetric_threats():
         cases[b] = cs
         if b <= 0.5:
             plt.plot([p.x for p in path], [p.y for p in path],
-                     label=f'length {round(length, 2)}, budgets part. {round(b, 2)},{round(1 - b, 2)}')
+                     label=f'{round(length, 2)}, {round(b, 2)}:{round(1 - b, 2)}')
 
-    plt.legend(fontsize=legend_font)
+    plt.legend(fontsize=legend_font-1, loc='center left', bbox_to_anchor=(0.9, 0.5))
 
     # plot length as function of budget partition
     plt.subplot(2, 1, 2)
