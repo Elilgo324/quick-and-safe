@@ -1,13 +1,11 @@
-import time
 from random import randint, seed
-from typing import List, Tuple, Dict, Union
+from typing import List, Dict
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from shapely.geometry import Polygon, LineString
 
-from settings.coord import Coord
-from settings.threat import Threat
+from geometry.coord import Coord
+from geometry.circle import Circle
 
 
 class Environment:
@@ -48,7 +46,7 @@ class Environment:
         return self._y_range
 
     @property
-    def threats(self) -> List[Threat]:
+    def threats(self) -> List[Circle]:
         """The threats in the environment
 
         :return: the threats in the environment
@@ -116,7 +114,7 @@ class Environment:
 
         :param num_threats: the number of the threats to generate
         """
-        self._threats = [Threat.generate_random_threat((self.x_range, self.y_range)) for _ in range(num_threats)]
+        self._threats = [Circle.generate_random_threat((self.x_range, self.y_range)) for _ in range(num_threats)]
 
     def _create_disjoint_threats(self, num_threats: int) -> None:
         """Creates the random non-intersecting threats of the environment
@@ -124,7 +122,7 @@ class Environment:
         :param num_threats: the number of the threats to generate
         """
         for _ in range(num_threats):
-            new_threat = Threat.generate_non_intersecting_random_threat(
+            new_threat = Circle.generate_non_intersecting_random_threat(
                 self.threats_polygons, (self.x_range, self.y_range))
             self._threats.append(new_threat)
 

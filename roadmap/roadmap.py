@@ -1,15 +1,13 @@
 import itertools
 from abc import ABC
 from time import time
-from itertools import combinations
 from math import ceil
 from typing import List, Tuple
 
 import networkx as nx
-from shapely.geometry import Point, LineString
 
-from settings.coord import Coord
-from settings.environment import Environment
+from geometry.coord import Coord
+from environment.environment import Environment
 import matplotlib.pyplot as plt
 
 EPSILON = 0.0000001
@@ -175,7 +173,7 @@ class Roadmap(ABC):
 
         :param display_edges: if to display the edges of the graph
         """
-        # plot settings
+        # plot environment
         self._environment.plot()
 
         # plot roadmap

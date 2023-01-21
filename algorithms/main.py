@@ -1,7 +1,7 @@
 from algorithms.planning import single_threat_shortest_path_with_risk_constraint, \
     two_threats_shortest_path_with_risk_constraint
-from settings.coord import Coord
-from settings.threat import Threat
+from geometry.coord import Coord
+from geometry.circle import Circle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 def one_threat_under_risk_budget():
     target = Coord(-0.5, 4)
     source = Coord(5, 3)
-    threat = Threat(center=Coord(3, 4), radius=1.8)
+    threat = Circle(center=Coord(3, 4), radius=1.8)
 
     plt.figure(figsize=(10, 10))
 
@@ -32,7 +32,7 @@ def one_threat_under_risk_budget():
 def one_threat_under_length_budget():
     target = Coord(-0.5, 4)
     source = Coord(5, 3)
-    threat = Threat(center=Coord(3, 4), radius=1.8)
+    threat = Circle(center=Coord(3, 4), radius=1.8)
 
     plt.figure(figsize=(10, 10))
 
@@ -58,8 +58,8 @@ def two_symmetric_threats():
     source = Coord(1, 5)
     target = Coord(1000, 5)
     radius = 100
-    threat1 = Threat(center=Coord(300, 0), radius=radius)
-    threat2 = Threat(center=Coord(700, 0), radius=radius)
+    threat1 = Circle(center=Coord(300, 0), radius=radius)
+    threat2 = Circle(center=Coord(700, 0), radius=radius)
     risk_limits = [2 * radius, 2.1 * radius, 2.2 * radius, 2.3 * radius, 2.4 * radius, 2.5 * radius, 2.6 * radius, 2.7 * radius, 3 * radius]
     risk_limits = [1.8 * radius, 2 * radius, 2.3 * radius, 2.5 * radius, 2.7 * radius, 3 * radius]
     # risk_limits = [radius]
@@ -121,8 +121,8 @@ def same_threats_farther_source():
     source = Coord(-600, 1)
     target = Coord(1000, 1)
     radius = 100
-    threat1 = Threat(center=Coord(300, 0), radius=radius)
-    threat2 = Threat(center=Coord(700, 0), radius=radius)
+    threat1 = Circle(center=Coord(300, 0), radius=radius)
+    threat2 = Circle(center=Coord(700, 0), radius=radius)
     risk_limits = [0.5 * radius, radius, 1.5 * radius, 2 * radius, 2.5 * radius,
                    3 * radius, 3.5 * radius, 3.9 * radius, 4 * radius]
 
@@ -183,8 +183,8 @@ def bigger_threat():
     source = Coord(0, 1)
     target = Coord(1000, 1)
     radius = 100
-    threat1 = Threat(center=Coord(300, 0), radius=1.3 * radius)
-    threat2 = Threat(center=Coord(700, 0), radius=radius)
+    threat1 = Circle(center=Coord(300, 0), radius=1.3 * radius)
+    threat2 = Circle(center=Coord(700, 0), radius=radius)
     risk_limits = [0.5 * radius, radius, 1.5 * radius, 2 * radius, 2.25 * radius, 2.5 * radius, 2.75 * radius,
                    3 * radius]
 
@@ -242,8 +242,8 @@ def asymmetric_but_same_side():
     source = Coord(0, 1)
     target = Coord(1000, 1)
     radius = 100
-    threat1 = Threat(center=Coord(300, 0), radius=radius)
-    threat2 = Threat(center=Coord(700, -50), radius=radius)
+    threat1 = Circle(center=Coord(300, 0), radius=radius)
+    threat2 = Circle(center=Coord(700, -50), radius=radius)
     risk_limits = [0.5 * radius, radius, 1.5 * radius, 2 * radius, 2.25 * radius, 2.5 * radius, 2.75 * radius,
                    3 * radius]
 
@@ -301,8 +301,8 @@ def asymmetric_other_side():
     source = Coord(0, 1)
     target = Coord(1000, 1)
     radius = 100
-    threat1 = Threat(center=Coord(300, 51), radius=radius)
-    threat2 = Threat(center=Coord(700, -49), radius=radius)
+    threat1 = Circle(center=Coord(300, 51), radius=radius)
+    threat2 = Circle(center=Coord(700, -49), radius=radius)
     risk_limits = [0.5 * radius, radius, 1.5 * radius, 2 * radius, 2.25 * radius, 2.5 * radius, 2.75 * radius,
                    3 * radius]
 

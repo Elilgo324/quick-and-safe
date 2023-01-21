@@ -1,14 +1,9 @@
 import math
-from time import time
-from typing import List, Tuple, Dict
-
-from shapely.geometry import Point
-from heapq import nsmallest
+from typing import List
 
 from roadmap.roadmap import Roadmap
-from settings.coord import Coord
-from settings.environment import Environment
-from tqdm import tqdm
+from geometry.coord import Coord
+from environment.environment import Environment
 
 
 class RRG(Roadmap):
@@ -29,7 +24,7 @@ class RRG(Roadmap):
             sample = self._environment.sample(is_safe_sample=False)
             nearest = self._nearest(sample)
 
-            steered_sample = nearest.shift(
+            steered_sample = nearest.shifted(
                 distance=self._steering_coefficient,
                 angle=math.atan((sample.y - nearest.y)/(sample.x - nearest.x))
             )

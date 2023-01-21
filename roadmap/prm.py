@@ -1,14 +1,11 @@
 import math
-from time import time
-from typing import List, Tuple, Dict
+from typing import List
 
-from shapely.geometry import Point
 from heapq import nsmallest
 
 from roadmap.roadmap import Roadmap
-from settings.coord import Coord
-from settings.environment import Environment
-from tqdm import tqdm
+from geometry.coord import Coord
+from environment.environment import Environment
 
 
 class PRM(Roadmap):
