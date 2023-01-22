@@ -11,7 +11,7 @@ def multiple_threats_shortest_path(source: Coord, target: Coord, circles: List[C
     path = Path([source, target])
 
     threat_intersection_length = sum(
-        [LineString(path.to_shapely.intersection(circle.polygon)).length for circle in circles]
+        [LineString(path.to_shapely.intersection(circle.inner_polygon)).length for circle in circles]
     )
 
     return path, path.length, threat_intersection_length

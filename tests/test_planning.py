@@ -1,11 +1,11 @@
 from shapely.geometry import LineString
 from shapely.ops import nearest_points
 
-from geometry.geometric import compute_path_length
 from algorithms.single_threat import single_threat_shortest_path, single_threat_safest_path, \
     single_threat_shortest_path_with_budget_constraint
 from geometry.coord import Coord
 from geometry.circle import Circle
+from geometry.path import Path
 
 source1 = Coord(8, 3)
 target1 = Coord(-0.5, 4)
@@ -34,7 +34,7 @@ def test_safest_path_single_threat():
         assert length > source.distance_to(target)
         assert length < source.distance_to(threat) \
                + target.distance_to(threat) \
-               + 0.5 * compute_path_length(threat.boundary)
+               + 0.5 * Path.compute_path_length(threat.boundary)
 
 
 def test_single_threat_shortest_path_with_risk_constraint():

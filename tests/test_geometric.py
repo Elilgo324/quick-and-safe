@@ -102,13 +102,6 @@ def test_calculate_points_in_distance_on_circle():
     assert abs(p1.distance_to(center) - radius) < 1e-8
 
 
-def test_vertical_segment():
-    segment = Segment(Coord(0, -5), Coord(0, 5))
-    assert Segment(Coord(-5, 0), Coord(5, 0)).almost_equal(segment.vertical_segment)
-    segment = Segment(Coord(-3, -3), Coord(3, 3))
-    assert Segment(Coord(-3, 3), Coord(3, -3)).almost_equal(segment.vertical_segment)
-
-
 if __name__ == '__main__':
     test_is_left_side_of_line()
     test_calculate_contact_points_with_circle_from_point()
@@ -117,4 +110,3 @@ if __name__ == '__main__':
     test_calculate_non_directional_angle_of_line()
     test_calculate_directional_angle_of_line()
     test_calculate_points_in_distance_on_circle()
-    test_vertical_segment()

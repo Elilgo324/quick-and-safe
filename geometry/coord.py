@@ -4,6 +4,7 @@ from typing import Tuple
 from shapely import Point
 
 from geometry.entity import Entity
+import matplotlib.pyplot as plt
 
 
 class Coord(Entity):
@@ -62,10 +63,14 @@ class Coord(Entity):
         return self.x == other.x and self.y == other.y
 
     def almost_equal(self, other: 'Coord', epsilon: float = 1e-5) -> bool:
-        return self.distance_to(other) < epsilon
+        return self.distance_to(other) <= epsilon
 
     def __hash__(self):
         return hash(self.xy)
 
     def __str__(self):
         return f'Coord({self.x},{self.y})'
+
+    def plot(self):
+        plt.scatter(self.x, self.y, s=20, color='black', zorder=10)
+        plt.scatter(self.x, self.y, s=10, color='green', zorder=11)

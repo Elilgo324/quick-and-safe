@@ -14,3 +14,7 @@ class Entity(ABC):
         if isinstance(other, BaseGeometry):
             return self.to_shapely.distance(other)
         return self.to_shapely.distance(other.to_shapely)
+
+    @abstractmethod
+    def plot(self):
+        pass

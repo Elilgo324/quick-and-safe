@@ -59,7 +59,7 @@ class Environment:
 
         :return: the threats polygons in the environment
         """
-        return [threat.polygon for threat in self._threats]
+        return [threat.inner_polygon for threat in self._threats]
 
     @property
     def source(self) -> Coord:

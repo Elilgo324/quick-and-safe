@@ -7,6 +7,7 @@ from geometry.geometric import calculate_directional_angle_of_line
 from geometry.coord import Coord
 from geometry.entity import Entity
 
+import matplotlib.pyplot as plt
 
 class Segment(Entity):
     def __init__(self, start: Coord, end: Coord) -> None:
@@ -65,3 +66,6 @@ class Segment(Entity):
 
     def almost_equal(self, other: 'Segment') -> bool:
         return other.start.almost_equal(self.start) and other.end.almost_equal(self.end)
+
+    def plot(self):
+        plt.plot([self.start.x, self.end.x], [self.start.y, self.end.y], color='green', zorder=10)

@@ -28,7 +28,7 @@ def two_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
     halfspace_angle = circles_centers_segment.angle + 0.5 * math.pi
 
     # find all mid-targets
-    convex_hull = circle1.polygon.union(circle2.polygon).convex_hull
+    convex_hull = circle1.inner_polygon.union(circle2.inner_polygon).convex_hull
 
     mid_targets = []
     i = EPSILON
