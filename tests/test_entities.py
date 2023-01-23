@@ -46,7 +46,16 @@ def test_circle_boundary_between():
     assert 0 < math.pi * (circle.radius + circle.EPSILON) - Path(boundary_between).length < 1
 
 
+def test_path_addition():
+    path1 = Path([Coord(1, 1), Coord(2, 2)])
+    path2 = Path([Coord(3, 3), Coord(4, 4)])
+    merged_path = Path.concat_paths(path1, path2)
+    assert merged_path.length == path1.length + path2.length + Path([path1.coords[-1], path2.coords[0]]).length
+    assert merged_path.coords == path1.coords + path2.coords
+
+
 if __name__ == '__main__':
     test_circle_path_intersection()
     test_vertical_segment()
     test_circle_boundary_between()
+    test_path_addition()

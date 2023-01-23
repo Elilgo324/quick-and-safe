@@ -1,13 +1,13 @@
 import math
-from typing import Tuple, List
+from typing import Tuple
 
 import numpy as np
 
-from geometry.geometric import calculate_points_in_distance_on_circle, \
-    calculate_arc_length_on_chord, calculate_angle_on_chord, calculate_directional_angle_of_line
 from algorithms.multiple_threats import multiple_threats_shortest_path
 from geometry.circle import Circle
 from geometry.coord import Coord
+from geometry.geometric import calculate_points_in_distance_on_circle, \
+    calculate_angle_on_chord, calculate_directional_angle_of_line
 from geometry.path import Path
 
 
@@ -21,9 +21,7 @@ def _compute_s_t_contact_points(source: Coord, target: Coord, circle: Circle) ->
 
 
 def single_threat_safest_path(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
-    source_contact, target_contact = _compute_s_t_contact_points(source, target, circle)
-    path = Path([source] + circle.get_boundary_between(source_contact, target_contact) + [target])
-    return path, path.length, 0
+    return _walking_on_arc(source, target, circle, budget=0)
 
 
 def _direct_connection(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
@@ -85,7 +83,7 @@ def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: floa
 
     path = Path([source, entry_point, exit_point, target])
 
-    return path, path.length, budget
+    return path, path.length, circle.compute_path_risk(path)
 
 
 def single_threat_shortest_path_with_budget_constraint(
@@ -95,5 +93,5 @@ def single_threat_shortest_path_with_budget_constraint(
     arc_result = _walking_on_arc(source, target, circle, budget)
     chord_result = _walking_on_chord(source, target, circle, budget)
 
-    legal_results = [result for result in [direct_result, arc_result, chord_result] if result[2] < budget]
+    legal_results = [result for result in [direct_result, arc_result, chord_result] if result[2] <= budget]
     return min(legal_results, key=lambda r: r[1])

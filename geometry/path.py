@@ -1,11 +1,9 @@
 from typing import List
 
+import matplotlib.pyplot as plt
 from shapely import LineString
 
 from geometry.coord import Coord
-
-import matplotlib.pyplot as plt
-
 from geometry.entity import Entity
 from geometry.segment import Segment
 
@@ -52,6 +50,13 @@ class Path(Entity):
     @classmethod
     def compute_path_length(cls, path: List[Coord]) -> float:
         return sum([c1.distance_to(c2) for c1, c2 in zip(path[:-1], path[1:])])
+
+    def __eq__(self, other: 'Path') -> bool:
+        return all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)])
+
+    @classmethod
+    def concat_paths(cls, path1: 'Path', path2: 'Path') -> 'Path':
+        return cls(path1.coords + path2.coords)
 
     def plot(self) -> None:
         plt.plot([c.x for c in self.coords], [c.y for c in self.coords], color='green', zorder=10)

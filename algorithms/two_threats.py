@@ -16,7 +16,7 @@ def two_threats_shortest_path(source: Coord, target: Coord, circle1: Circle, cir
     return multiple_threats_shortest_path(source, target, [circle1, circle2])
 
 
-EPSILON = 5
+MID_TARGET_STEP = 5
 
 
 def two_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
@@ -24,28 +24,29 @@ def two_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
 ) -> Tuple[Path, float, float]:
     # find one mid-target
     circles_centers_segment = Segment(circle1.center, circle2.center)
-    first_mid_target = circle1.center.shifted(distance=circle1.radius + EPSILON, angle=circles_centers_segment.angle)
+    first_mid_target = circle1.center.shifted(distance=circle1.radius + MID_TARGET_STEP,
+                                              angle=circles_centers_segment.angle)
     halfspace_angle = circles_centers_segment.angle + 0.5 * math.pi
 
     # find all mid-targets
     convex_hull = circle1.inner_polygon.union(circle2.inner_polygon).convex_hull
 
     mid_targets = []
-    i = EPSILON
+    i = MID_TARGET_STEP
     while True:
         shifted = first_mid_target.shifted(distance=i, angle=halfspace_angle)
         if not convex_hull.contains(Point(shifted.xy)):
             break
         mid_targets.append(shifted)
-        i += EPSILON
+        i += MID_TARGET_STEP
 
-    i = EPSILON
+    i = MID_TARGET_STEP
     while True:
         shifted = first_mid_target.shifted(distance=i, angle=halfspace_angle + math.pi)
         if not convex_hull.contains(Point(shifted.xy)):
             break
         mid_targets.append(shifted)
-        i += EPSILON
+        i += MID_TARGET_STEP
 
     # calculate path for each mid-target
     optional_paths = {mid_target: None for mid_target in mid_targets}
@@ -55,7 +56,7 @@ def two_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
             source, mid_target, circle1, risk_limit * budgets[0])
         path_from, length_from, risk_from = single_threat_shortest_path_with_budget_constraint(
             mid_target, target, circle2, risk_limit * budgets[1])
-        optional_paths[mid_target] = {'path': path_to + path_from,
+        optional_paths[mid_target] = {'path': Path.concat_paths(path_to, path_from),
                                       'length': length_to + length_from,
                                       'risk': risk_to + risk_from}
 
