@@ -65,3 +65,41 @@ def two_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
     return optional_paths[min_mid_target]['path'], \
            optional_paths[min_mid_target]['length'], \
            optional_paths[min_mid_target]['risk']
+
+
+def _direct_connection(source: Coord, target: Coord, circle1: Circle, circle2: Circle) -> Tuple[Path, float, float]:
+    return two_threats_shortest_path(source, target, circle1, circle2)
+
+
+def _both_walking_on_arc(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
+        -> Tuple[Path, float, float]:
+    return two_threats_shortest_path(source, target, circle1, circle2)
+
+
+def _both_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
+        -> Tuple[Path, float, float]:
+    return two_threats_shortest_path(source, target, circle1, circle2)
+
+
+def _walking_on_chord_and_arc(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
+        -> Tuple[Path, float, float]:
+    return two_threats_shortest_path(source, target, circle1, circle2)
+
+
+def _walking_on_arc_and_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
+        -> Tuple[Path, float, float]:
+    return two_threats_shortest_path(source, target, circle1, circle2)
+
+
+def two_threats_shortest_path_with_budget_constraint(
+        source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float
+) -> Tuple[Path, float, float]:
+    direct_result = _direct_connection(source, target, circle1, circle2)
+    both_arc_result = _both_walking_on_arc(source, target, circle1, circle2, budget)
+    both_chord_result = _both_walking_on_chord(source, target, circle1, circle2, budget)
+    arc_chord_result = _walking_on_chord_and_arc(source, target, circle1, circle2, budget)
+    chord_arc_result = _walking_on_arc_and_chord(source, target, circle1, circle2, budget)
+
+    legal_results = [result for result in [
+        direct_result, both_arc_result, both_chord_result, arc_chord_result, chord_arc_result] if result[2] <= budget]
+    return min(legal_results, key=lambda r: r[1])

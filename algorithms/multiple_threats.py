@@ -17,6 +17,16 @@ def multiple_threats_shortest_path(source: Coord, target: Coord, circles: List[C
     return path, path.length, threat_intersection_length
 
 
+MID_TARGET_STEP = 5
+
+
+def multiple_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
+        source: Coord, target: Coord, circles: List[Circle], budget: float, budgets: Tuple[float, float]
+) -> Tuple[Path, float, float]:
+    # TBD do with bottleneck logic
+    pass
+
+
 def multiple_threats_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, threats: List[Circle], risk_limit: float, budgets) -> Tuple[
     List[Coord], float, float, Tuple]:

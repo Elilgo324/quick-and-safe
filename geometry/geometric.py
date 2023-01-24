@@ -94,3 +94,34 @@ def calculate_points_in_distance_on_circle(center: Coord, radius: float, point: 
     point1 = center.shifted(distance=radius, angle=angle_of_point + angle_on_chord)
     point2 = center.shifted(distance=radius, angle=angle_of_point - angle_on_chord)
     return point1, point2
+
+
+def calculate_tangent_points_of_circles(center1: Coord, radius1: float, center2: Coord, radius2: float) \
+        -> Tuple[Coord, Coord, Coord, Coord]:
+    """Calculate the two pairs of tangent points of two circles
+
+    :param center1: the center of circle1
+    :param radius1: the radius of circle1
+    :param center2: the center of circle2
+    :param radius2: the radius of circle2
+    :return: the two pairs of tangent points of two circles
+    """
+    centers_segment_length = center1.distance_to(center2)
+    centers_segment_angle = calculate_directional_angle_of_line(center1, center2)
+
+    theta1 = math.acos(centers_segment_length / abs(radius1 - radius2))
+    theta2 = math.pi - theta1
+
+    if radius2 > radius1:
+        temp = theta1
+        theta1 = theta2
+        theta2 = temp
+
+    upper_theta1 = centers_segment_angle + theta1
+    upper_theta2 = centers_segment_angle + theta2
+
+    lower_theta1 = centers_segment_angle - theta1
+    lower_theta2 = centers_segment_angle - theta2
+
+    return center1.shifted(radius1, upper_theta1), center2.shifted(radius2, upper_theta2), \
+           center1.shifted(radius1, lower_theta1), center2.shifted(radius2, lower_theta2)
