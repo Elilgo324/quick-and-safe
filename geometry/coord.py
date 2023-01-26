@@ -1,10 +1,10 @@
 import math
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 from shapely import Point
 
 from geometry.entity import Entity
-import matplotlib.pyplot as plt
 
 
 class Coord(Entity):
@@ -69,6 +69,9 @@ class Coord(Entity):
         return hash(self.xy)
 
     def __str__(self):
+        return f'Coord({self.x},{self.y})'
+
+    def __repr__(self):
         return f'Coord({self.x},{self.y})'
 
     def plot(self):

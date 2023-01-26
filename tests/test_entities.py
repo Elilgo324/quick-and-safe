@@ -6,6 +6,13 @@ from geometry.path import Path
 from geometry.segment import Segment
 
 
+def test_coords_equality():
+    assert Coord(40, -80) != Coord(40.0, -79.99999999999997)
+    assert Coord(-200, 400) != Coord(-199.99999999999997, 400.0)
+    assert Coord(40, -80).almost_equal(Coord(40.0, -79.99999999999997))
+    assert Coord(-200, 400).almost_equal(Coord(-199.99999999999997, 400.0))
+
+
 def test_circle_path_intersection():
     circle1 = Circle(center=Coord(100, 100), radius=100)
     circle2 = Circle(center=Coord(500, 100), radius=100)
@@ -52,10 +59,3 @@ def test_path_addition():
     merged_path = Path.concat_paths(path1, path2)
     assert merged_path.length == path1.length + path2.length + Path([path1.coords[-1], path2.coords[0]]).length
     assert merged_path.coords == path1.coords + path2.coords
-
-
-if __name__ == '__main__':
-    test_circle_path_intersection()
-    test_vertical_segment()
-    test_circle_boundary_between()
-    test_path_addition()

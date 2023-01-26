@@ -97,10 +97,3 @@ def test_single_threat_shortest_path_with_risk_constraint():
 
 def test_symetric_threats_symetric_lengths():
     pass
-
-
-if __name__ == '__main__':
-    test_shortest_path_single_threat()
-    test_safest_path_single_threat()
-    test_single_threat_shortest_path_with_risk_constraint()
-    test_symetric_threats_symetric_lengths()
