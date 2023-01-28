@@ -16,16 +16,15 @@ def single_threat_shortest_path(source: Coord, target: Coord, circle: Circle) ->
 
 
 def _compute_s_t_contact_points(source: Coord, target: Coord, circle: Circle) -> Tuple[Coord, Coord]:
-    return min(source.contact_points_with_circle(circle.center, circle.radius), key=lambda p: p.distance_to(target)), \
-           min(target.contact_points_with_circle(circle.center, circle.radius), key=lambda p: p.distance_to(source))
+    corner = Coord(source.x, target.y)
+    return min(source.contact_points_with_circle(circle.center, circle.radius),
+               key=lambda p: (p.distance_to(target), p.distance_to(corner))), \
+           min(target.contact_points_with_circle(circle.center, circle.radius),
+               key=lambda p: (p.distance_to(source), p.distance_to(corner)))
 
 
 def single_threat_safest_path(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
     return _walking_on_arc(source, target, circle, budget=0)
-
-
-def _direct_connection(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
-    return single_threat_shortest_path(source, target, circle)
 
 
 def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float) -> Tuple[Path, float, float]:
@@ -83,13 +82,13 @@ def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: floa
 
     path = Path([source, entry_point, exit_point, target])
 
-    return path, path.length, circle.compute_path_risk(path)
+    return path, path.length, circle.path_intersection(path)
 
 
 def single_threat_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle: Circle, budget: float
 ) -> Tuple[Path, float, float]:
-    direct_result = _direct_connection(source, target, circle)
+    direct_result = single_threat_shortest_path(source, target, circle)
     arc_result = _walking_on_arc(source, target, circle, budget)
     chord_result = _walking_on_chord(source, target, circle, budget)
 

@@ -1,8 +1,9 @@
 from shapely.geometry import LineString
 from shapely.ops import nearest_points
 
+from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path, single_threat_safest_path, \
-    single_threat_shortest_path_with_budget_constraint
+    single_threat_shortest_path_with_budget_constraint, _compute_s_t_contact_points
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.path import Path
@@ -95,5 +96,31 @@ def test_single_threat_shortest_path_with_risk_constraint():
            > one_before_target.distance_to(nearest_points(st_segment, one_before_target.to_shapely)[0])
 
 
-def test_symetric_threats_symetric_lengths():
-    pass
+def test_shortest_path():
+    circles = [Circle(Coord(100, 100), 100), Circle(Coord(300, 500), 100), Circle(Coord(700, 700), 90)]
+    source = Coord(0, 0)
+    target = Coord(1000, 0)
+    path, length, risk = multiple_threats_shortest_path(source, target, circles)
+    assert path == Path([source, target])
+    assert length == source.distance_to(target)
+    assert risk == 0
+
+
+def test_one_threat():
+    circle = Circle(Coord(100, 100), 100)
+    source = Coord(0, 0)
+    target = Coord(200, 200)
+    budget = circle.radius * 2
+    path, length, risk = single_threat_shortest_path_with_budget_constraint(source, target, circle, budget)
+    assert length == source.distance_to(target)
+    assert risk == circle.radius * 2
+
+
+def test_compute_s_t_contact_points():
+    circle = Circle(Coord(100, 100), 100)
+    source = Coord(0, 0)
+    target = Coord(200, 200)
+
+    s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
+    assert s_contact.almost_equal(Coord(0, 100))
+    assert t_contact.almost_equal(Coord(100, 200))

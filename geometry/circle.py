@@ -1,13 +1,13 @@
 import math
 from random import randint
 from typing import List, Tuple
+
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon
 
-from shapely.geometry import Polygon, LineString
-
-from geometry.geometric import calculate_directional_angle_of_line
 from geometry.coord import Coord
 from geometry.entity import Entity
+from geometry.geometric import calculate_directional_angle_of_line
 from geometry.path import Path
 
 
@@ -43,7 +43,7 @@ class Circle(Entity):
     def to_shapely(self) -> Polygon:
         return self._inner_polygon
 
-    def compute_path_risk(self, path: Path) -> float:
+    def path_intersection(self, path: Path) -> float:
         return sum([self.inner_polygon.intersection(segment.to_shapely).length for segment in path.segments])
 
     @property
