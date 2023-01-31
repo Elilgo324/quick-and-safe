@@ -56,8 +56,7 @@ def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: floa
         exit_point = center.shifted(distance=radius, angle=theta - beta)
         return source.distance_to(entry_point) + budget + target.distance_to(exit_point)
 
-    ep1, ep2 = calculate_points_in_distance_on_circle(center, radius, t_contact, budget)
-    chord_start_of_t_contact = min([ep1, ep2], key=lambda p: p.distance_to(source))
+    chord_start_of_t_contact = circle.calculate_exit_point(t_contact, budget, source)
 
     L_range = (calculate_directional_angle_of_line(start=center, end=s_contact),
                calculate_directional_angle_of_line(start=center, end=chord_start_of_t_contact))

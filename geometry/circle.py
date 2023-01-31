@@ -7,8 +7,9 @@ from shapely.geometry import Polygon
 
 from geometry.coord import Coord
 from geometry.entity import Entity
-from geometry.geometric import calculate_directional_angle_of_line
+from geometry.geometric import calculate_directional_angle_of_line, calculate_points_in_distance_on_circle
 from geometry.path import Path
+from geometry.segment import Segment
 
 
 class Circle(Entity):
@@ -46,6 +47,13 @@ class Circle(Entity):
     def path_intersection(self, path: Path) -> float:
         return sum([self.inner_polygon.intersection(segment.to_shapely).length for segment in path.segments])
 
+    def calculate_exit_point(self, start: Coord, chord: float, target: Coord) -> Coord:
+        if chord >= self.radius * 2:
+            return start.shifted(distance=2 * self.radius, angle=Segment(start, self.center).angle)
+
+        return min(calculate_points_in_distance_on_circle(self.center, self.radius, start, chord),
+                   key=lambda p: p.distance_to(target))
+
     @property
     def boundary(self) -> List[Coord]:
         if self._boundary is None:
@@ -78,7 +86,7 @@ class Circle(Entity):
                 angle -= Circle.ANGLE_STEP
             boundary.append(self.center.shifted(self.radius + Circle.EPSILON, small_angle))
 
-        return boundary[::-1] if not boundary[0].almost_equal(start, epsilon=Circle.EPSILON) else boundary
+        return boundary[::-1] if not boundary[0].distance_to(start) < boundary[0].distance_to(end) else boundary
 
     @classmethod
     def generate_random_threat(cls, environment_range: Tuple[int, int], radius_range: Tuple[int, int] = (100, 200)) \
@@ -110,3 +118,9 @@ class Circle(Entity):
         plt.plot([p.x for p in self.boundary], [p.y for p in self.boundary], color='red', zorder=1)
         plt.scatter(self.center.x, self.center.y, s=20, color='black', zorder=1)
         plt.scatter(self.center.x, self.center.y, s=10, color='red', zorder=2)
+
+    def __str__(self) -> str:
+        return f'Circle({self.center},{self.radius})'
+
+    def __repr__(self) -> str:
+        return self.__str__()

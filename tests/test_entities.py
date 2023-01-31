@@ -59,3 +59,24 @@ def test_path_addition():
     merged_path = Path.concat_paths(path1, path2)
     assert merged_path.length == path1.length + path2.length + Path([path1.coords[-1], path2.coords[0]]).length
     assert merged_path.coords == path1.coords + path2.coords
+
+
+def test_exit_point():
+    r = 100
+    center = Coord(200, 100)
+    circle = Circle(center, r)
+    start_point = center.shifted(r, 1)
+    assert circle.calculate_exit_point(start_point, 2 * r, start_point) \
+           == start_point.shifted(2 * r, Segment(start_point, center).angle)
+
+    assert circle.calculate_exit_point(start_point, 1.5 * r, Coord(1000, 1000)).distance_to(start_point) == 1.5 * r
+    assert circle.calculate_exit_point(start_point, 1 * r, Coord(1000, 1000)) \
+           != circle.calculate_exit_point(start_point, 1 * r, Coord(-1000, -1000))
+    assert abs(circle.calculate_exit_point(start_point, 1 * r, Coord(1000, 1000)).distance_to(start_point)
+               - circle.calculate_exit_point(start_point, 1 * r, Coord(-1000, -1000)).distance_to(start_point)) < 1e-3
+
+    circle = Circle(Coord(100, 100), 100)
+    start_point = Coord(0, 100)
+    chord = math.sqrt(100 ** 2 + 100 ** 2)
+    assert circle.calculate_exit_point(start_point, chord, Coord(1000, 1000)).almost_equal(Coord(100, 200))
+    assert circle.calculate_exit_point(start_point, chord, Coord(-1000, -1000)).almost_equal(Coord(100, 0))
