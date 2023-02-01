@@ -106,38 +106,35 @@ def _both_walking_on_arc(source: Coord, target: Coord, circle1: Circle, circle2:
     return path, path.length, b1 + b2
 
 
-def _both_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
+def _first_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
         -> Tuple[Path, float, float]:
     center1, center2 = circle1.center, circle2.center
     radius1, radius2 = circle1.radius, circle2.radius
 
-    def L(theta1: float) -> float:
+    def L(theta1: float) -> Tuple[float, Path]:
         p1_i = center1.shifted(radius1, theta1)
         p1_o = circle1.calculate_exit_point(p1_i, b1, target)
 
-        return source.distance_to(p1_i) \
-               + single_threat_shortest_path_with_budget_constraint(p1_o, target, circle2, b2)[1]
+        second_circle_path = single_threat_shortest_path_with_budget_constraint(p1_o, target, circle2, b2)
 
-    theta1 = min(zip(np.arange(0, 2 * math.pi, 0.05), key=L)
-    theta2 = 0
+        return source.distance_to(p1_i) + second_circle_path[1], second_circle_path[0]
+
+    theta1 = min(np.arange(0, 2 * math.pi, 0.05), key=lambda theta: L(theta)[0])
 
     pi1 = circle1.center.shifted(circle1.radius, theta1)
     po1 = circle1.calculate_exit_point(pi1, b1, target)
-    pi2 = circle2.center.shifted(circle2.radius, theta2)
-    po2 = circle2.calculate_exit_point(pi2, b2, target)
 
-    path = Path([source, pi1, po1, pi2, po2, target])
-    return path, path.length, b1 + b2
+    first_circle_path = Path([source, pi1, po1])
+    second_circle_path = L(theta1)[1]
+    path = Path.concat_paths(first_circle_path, second_circle_path)
+
+    return path, path.length, \
+           circle1.path_intersection(first_circle_path) + circle2.path_intersection(second_circle_path)
 
 
-def _walking_on_chord_and_arc(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
+def _second_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
         -> Tuple[Path, float, float]:
-    return _both_walking_on_chord(source, target, circle1, circle2, b1, b2)
-
-
-def _walking_on_arc_and_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
-        -> Tuple[Path, float, float]:
-    path, length, risk = _both_walking_on_chord(target, source, circle2, circle1, b2, b1)
+    path, length, risk = _first_walking_on_chord(target, source, circle2, circle1, b2, b1)
     return Path(path.coords[::-1]), length, risk
 
 
@@ -151,15 +148,13 @@ def two_threats_shortest_path_with_budget_constraint(
     b1, b2 = alpha * budget, (1 - alpha) * budget
     both_arc_result = _both_walking_on_arc(source, target, circle1, circle2, b1, b2)
 
-    both_chord_result = _both_walking_on_chord(source, target, circle1, circle2, b1, b2)
+    first_chord_result = _first_walking_on_chord(source, target, circle1, circle2, b1, b2)
 
-    arc_chord_result = _walking_on_chord_and_arc(source, target, circle1, circle2, b1, b2)
-
-    chord_arc_result = _walking_on_arc_and_chord(source, target, circle1, circle2, b1, b2)
+    second_chord_result = _second_walking_on_chord(source, target, circle1, circle2, b1, b2)
 
     legal_results = [result for result in [
         direct_result, only_first_result, only_second_result, both_arc_result,
-        both_chord_result, arc_chord_result, chord_arc_result] if result[2] <= budget]
+        first_chord_result, second_chord_result] if result[2] <= budget]
 
     # legal_results = [result for result in [
     #     direct_result, only_first_result, only_second_result, both_arc_result] if result[2] <= budget]
@@ -172,7 +167,7 @@ if __name__ == '__main__':
     target = Coord(500, 0)
     c1 = Circle(Coord(100, 50), 100)
     c2 = Circle(Coord(300, 50), 100)
-    path, length, risk = _both_walking_on_chord(source, target, c1, c2, 180, 180)
+    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 310)
     print(f'length {length} risk {risk}')
     path.plot()
     c1.plot()
