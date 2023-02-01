@@ -1,7 +1,7 @@
 from typing import List
 
 import matplotlib.pyplot as plt
-from shapely import LineString
+from shapely.geometry import LineString
 
 from geometry.coord import Coord
 from geometry.entity import Entity

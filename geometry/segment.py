@@ -1,13 +1,13 @@
 import math
 from typing import Tuple
 
-from shapely import LineString
+import matplotlib.pyplot as plt
+from shapely.geometry import LineString
 
-from geometry.geometric import calculate_directional_angle_of_line
 from geometry.coord import Coord
 from geometry.entity import Entity
+from geometry.geometric import calculate_directional_angle_of_line
 
-import matplotlib.pyplot as plt
 
 class Segment(Entity):
     def __init__(self, start: Coord, end: Coord) -> None:
@@ -63,6 +63,9 @@ class Segment(Entity):
 
     def __str__(self):
         return f'Segment({self.start},{self.end})'
+
+    def __repr__(self):
+        return self.__str__()
 
     def almost_equal(self, other: 'Segment') -> bool:
         return other.start.almost_equal(self.start) and other.end.almost_equal(self.end)

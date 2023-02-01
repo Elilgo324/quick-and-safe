@@ -2,7 +2,7 @@ import math
 from typing import Tuple
 
 import matplotlib.pyplot as plt
-from shapely import Point
+from shapely.geometry import Point
 
 from geometry.entity import Entity
 

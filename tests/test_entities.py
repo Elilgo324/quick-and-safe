@@ -80,3 +80,9 @@ def test_exit_point():
     chord = math.sqrt(100 ** 2 + 100 ** 2)
     assert circle.calculate_exit_point(start_point, chord, Coord(1000, 1000)).almost_equal(Coord(100, 200))
     assert circle.calculate_exit_point(start_point, chord, Coord(-1000, -1000)).almost_equal(Coord(100, 0))
+
+    circle = Circle(Coord(200, 200), 200)
+    start_point = Coord(200, 400)
+    chord = math.sqrt(200 ** 2 + 200 ** 2)
+    assert circle.calculate_exit_point(start_point, chord, Coord(1000, 1000)).almost_equal(Coord(400, 200))
+    assert circle.calculate_exit_point(start_point, chord, Coord(-1000, -1000)).almost_equal(Coord(0, 200))

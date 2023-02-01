@@ -4,7 +4,7 @@ from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from shapely import Point
+from shapely.geometry import Point
 
 from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint
@@ -118,13 +118,13 @@ def _both_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle
         return source.distance_to(p1_i) \
                + single_threat_shortest_path_with_budget_constraint(p1_o, target, circle2, b2)[1]
 
-    theta1 = min(np.arange(0, 2 * math.pi, 0.1), key=L)
+    theta1 = min(zip(np.arange(0, 2 * math.pi, 0.05), key=L)
     theta2 = 0
 
     pi1 = circle1.center.shifted(circle1.radius, theta1)
     po1 = circle1.calculate_exit_point(pi1, b1, target)
-    pi2 = circle1.center.shifted(circle2.radius, theta2)
-    po2 = circle1.calculate_exit_point(pi2, b2, target)
+    pi2 = circle2.center.shifted(circle2.radius, theta2)
+    po2 = circle2.calculate_exit_point(pi2, b2, target)
 
     path = Path([source, pi1, po1, pi2, po2, target])
     return path, path.length, b1 + b2
@@ -172,7 +172,7 @@ if __name__ == '__main__':
     target = Coord(500, 0)
     c1 = Circle(Coord(100, 50), 100)
     c2 = Circle(Coord(300, 50), 100)
-    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 100)
+    path, length, risk = _both_walking_on_chord(source, target, c1, c2, 180, 180)
     print(f'length {length} risk {risk}')
     path.plot()
     c1.plot()
