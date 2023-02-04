@@ -27,6 +27,16 @@ def test_vertical_segment():
     assert Segment(Coord(-3, 3), Coord(3, -3)).almost_equal(segment.vertical_segment)
 
 
+def test_circle_arc_length():
+    circle = Circle(center=Coord(100, 100), radius=100)
+    start = Coord(0, 100)
+    end = Coord(200, 100)
+    assert circle.arc_length_between(start, end) == circle.radius * math.pi
+
+    end = Coord(100, 0)
+    assert circle.arc_length_between(start, end) == circle.radius * math.pi * 0.5
+
+
 def test_circle_boundary_between():
     circle = Circle(center=Coord(100, 100), radius=100)
     start = Coord(0, 100)

@@ -54,6 +54,9 @@ class Path(Entity):
     def __eq__(self, other: 'Path') -> bool:
         return all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)])
 
+    def __getitem__(self, idx: int) -> 'Coord':
+        return self.coords[idx]
+
     @classmethod
     def concat_paths(cls, path1: 'Path', path2: 'Path') -> 'Path':
         return cls(path1.coords + path2.coords)

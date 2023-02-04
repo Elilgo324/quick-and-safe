@@ -61,6 +61,12 @@ class Circle(Entity):
             self._boundary = [Coord(x, y) for x, y in zip(list(X), list(Y))]
         return self._boundary
 
+    def arc_length_between(self, start: Coord, end: Coord) -> float:
+        angle1 = calculate_directional_angle_of_line(start=self.center, end=start)
+        angle2 = calculate_directional_angle_of_line(start=self.center, end=end)
+
+        return abs(angle1 - angle2) * self.radius
+
     def get_boundary_between(self, start: Coord, end: Coord) -> List[Coord]:
         angle1 = calculate_directional_angle_of_line(start=self.center, end=start)
         angle2 = calculate_directional_angle_of_line(start=self.center, end=end)
@@ -81,9 +87,9 @@ class Circle(Entity):
         # if shorter boundary is clockwise
         else:
             angle = great_angle
-            while angle > small_angle:
+            while angle < small_angle + 2 * math.pi:
                 boundary.append(self.center.shifted(self.radius + Circle.EPSILON, angle))
-                angle -= Circle.ANGLE_STEP
+                angle += Circle.ANGLE_STEP
             boundary.append(self.center.shifted(self.radius + Circle.EPSILON, small_angle))
 
         return boundary[::-1] if not boundary[0].distance_to(start) < boundary[0].distance_to(end) else boundary

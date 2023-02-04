@@ -10,7 +10,7 @@ from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint
 from geometry.circle import Circle
 from geometry.coord import Coord
-from geometry.geometric import calculate_tangent_points_of_circles
+from geometry.geometric import calculate_outer_tangent_points_of_circles, calculate_inner_tangent_points_of_circles
 from geometry.path import Path
 from geometry.segment import Segment
 
@@ -80,12 +80,6 @@ def _two_threats_compute_s_t_contact_points(source: Coord, target: Coord, circle
                key=lambda p1p2: Path([source, p1p2[0], p1p2[1], target]).length)
 
 
-def _consider_one_circle(source: Coord, target: Coord, considered_circle: Circle, neglected_circle: Circle,
-                         budget: float) -> Tuple[Path, float, float]:
-    path, length, risk = single_threat_shortest_path_with_budget_constraint(source, target, considered_circle, budget)
-    return path, length, risk + neglected_circle.path_intersection(path)
-
-
 def _both_walking_on_arc(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
         -> Tuple[Path, float, float]:
     s_contact, t_contact = _two_threats_compute_s_t_contact_points(source, target, circle1, circle2)
@@ -93,11 +87,14 @@ def _both_walking_on_arc(source: Coord, target: Coord, circle1: Circle, circle2:
     exit_point1 = circle1.calculate_exit_point(s_contact, b1, t_contact)
     exit_point2 = circle2.calculate_exit_point(t_contact, b2, s_contact)
 
-    c1_upper, c1_lower, c2_upper, c2_lower = calculate_tangent_points_of_circles(
+    c1_upper, c1_lower, c2_upper, c2_lower = calculate_outer_tangent_points_of_circles(
         circle1.center, circle1.radius, circle2.center, circle2.radius)
-    contact1, contact2 = min([(c1_upper, c2_upper), (c1_lower, c2_lower)],
-                             key=lambda xy: xy[0].distance_to(source) + xy[1].distance_to(target)
-                             )
+    t1_upper, t1_lower, t2_upper, t2_lower = calculate_inner_tangent_points_of_circles(
+        circle1.center, circle1.radius, circle2.center, circle2.radius)
+
+    contact1, contact2 = min([(c1_upper, c2_upper), (c1_lower, c2_lower), (t1_upper, t2_lower), (t1_lower, t2_upper)],
+                             key=lambda xy: xy[0].distance_to(source) + xy[1].distance_to(target) + xy[0].distance_to(
+                                 xy[1]))
 
     path = Path(
         [source, s_contact, exit_point1] + circle1.get_boundary_between(exit_point1, contact1)
@@ -124,12 +121,10 @@ def _first_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circl
     pi1 = circle1.center.shifted(circle1.radius, theta1)
     po1 = circle1.calculate_exit_point(pi1, b1, target)
 
-    first_circle_path = Path([source, pi1, po1])
-    second_circle_path = L(theta1)[1]
-    path = Path.concat_paths(first_circle_path, second_circle_path)
+    path = Path.concat_paths(Path([source, pi1, po1]), L(theta1)[1])
 
     return path, path.length, \
-           circle1.path_intersection(first_circle_path) + circle2.path_intersection(second_circle_path)
+           circle1.path_intersection(path) + circle2.path_intersection(path)
 
 
 def _second_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
@@ -138,12 +133,23 @@ def _second_walking_on_chord(source: Coord, target: Coord, circle1: Circle, circ
     return Path(path.coords[::-1]), length, risk
 
 
+def _considering_only_first_circle(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
+        -> Tuple[Path, float, float]:
+    path, length, risk = single_threat_shortest_path_with_budget_constraint(target, source, circle1, budget)
+    return path, length, risk + circle2.path_intersection(path)
+
+
 def two_threats_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float, alpha: float = 0.5
 ) -> Tuple[Path, float, float]:
+    circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
+                           key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
+
     direct_result = two_threats_shortest_path(source, target, circle1, circle2)
-    only_first_result = _consider_one_circle(source, target, circle1, circle2, budget)
-    only_second_result = _consider_one_circle(source, target, circle2, circle1, budget)
+
+    only_first_result = _considering_only_first_circle(source, target, circle1, circle2, budget)
+
+    only_second_result = _considering_only_first_circle(source, target, circle2, circle1, budget)
 
     b1, b2 = alpha * budget, (1 - alpha) * budget
     both_arc_result = _both_walking_on_arc(source, target, circle1, circle2, b1, b2)
@@ -153,23 +159,42 @@ def two_threats_shortest_path_with_budget_constraint(
     second_chord_result = _second_walking_on_chord(source, target, circle1, circle2, b1, b2)
 
     legal_results = [result for result in [
-        direct_result, only_first_result, only_second_result, both_arc_result,
-        first_chord_result, second_chord_result] if result[2] <= budget]
-
-    # legal_results = [result for result in [
-    #     direct_result, only_first_result, only_second_result, both_arc_result] if result[2] <= budget]
+        direct_result, only_first_result, only_second_result, both_arc_result, first_chord_result, second_chord_result]
+                     if result[2] <= budget]
 
     return min(legal_results, key=lambda r: r[1])
 
 
 if __name__ == '__main__':
-    source = Coord(0, 0)
-    target = Coord(500, 0)
-    c1 = Circle(Coord(100, 50), 100)
-    c2 = Circle(Coord(300, 50), 100)
-    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 310)
-    print(f'length {length} risk {risk}')
+    source = Coord(0, 200)
+    target = Coord(700, 0)
+    c1 = Circle(Coord(200, 100), 100)
+    c2 = Circle(Coord(500, 100), 100)
+    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 5)
+    plt.title(f'length {round(length, 2)} risk {round(risk, 2)}')
+    plt.gca().set_aspect('equal', adjustable='box')
     path.plot()
     c1.plot()
     c2.plot()
     plt.show()
+
+# if __name__ == '__main__':
+#     target = Coord(400, -100)
+#     source = Coord(-50, 300)
+#     c1 = Circle(Coord(100, 50), 100)
+#     c2 = Circle(Coord(400, 50), 100)
+#     c3 = c1
+#
+#     c1 = c2
+#     c2 = c3
+#
+#     ts = calculate_inner_tangent_points_of_circles(c1.center, c1.radius, c2.center, c2.radius)
+#
+#     for t in ts:
+#         t.plot()
+#
+#     c1.plot()
+#     c2.plot()
+#
+#
+#     plt.show()
