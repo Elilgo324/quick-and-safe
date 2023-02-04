@@ -138,7 +138,6 @@ def _considering_only_first_circle(source: Coord, target: Coord, circle1: Circle
     path, length, risk = single_threat_shortest_path_with_budget_constraint(target, source, circle1, budget)
     return path, length, risk + circle2.path_intersection(path)
 
-
 def two_threats_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float, alpha: float = 0.5
 ) -> Tuple[Path, float, float]:
@@ -177,6 +176,81 @@ if __name__ == '__main__':
     c1.plot()
     c2.plot()
     plt.show()
+
+# def two_threats_shortest_path_with_budget_constraint(
+#         source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float, alpha: float = 0.5
+# ) -> Tuple[Path, float, float]:
+#     circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
+#                            key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
+#
+#     # direct_result = two_threats_shortest_path(source, target, circle1, circle2)
+#     #
+#     # only_first_result = _considering_only_first_circle(source, target, circle1, circle2, budget)
+#     #
+#     # only_second_result = _considering_only_first_circle(source, target, circle2, circle1, budget)
+#
+#     plt.figure(figsize=(10,10))
+#     plt.subplot(4,1,1)
+#     plt.gca().set_aspect('equal', adjustable='box')
+#     circle1.plot()
+#     circle2.plot()
+#
+#     l1 = []
+#     l2 = []
+#     l3 = []
+#
+#     r1 = []
+#     r2 = []
+#     r3 = []
+#
+#     alphas = arange(0,0.51,0.1)
+#     for alpha in tqdm(alphas):
+#         b1, b2 = alpha * budget, (1 - alpha) * budget
+#         both_arc_result = _both_walking_on_arc(source, target, circle1, circle2, b1, b2)
+#         l1.append(both_arc_result[1])
+#         r1.append(both_arc_result[2])
+#
+#         first_chord_result = _first_walking_on_chord(source, target, circle1, circle2, b1, b2)
+#         l2.append(first_chord_result[1])
+#         r2.append(first_chord_result[2])
+#
+#         second_chord_result = _second_walking_on_chord(source, target, circle1, circle2, b1, b2)
+#         l3.append(second_chord_result[1])
+#         r3.append(second_chord_result[2])
+#
+#     plt.subplot(4, 1, 2)
+#     plt.plot(alphas, l1, color='blue')
+#     plt.plot(alphas, r1, color='red')
+#
+#     plt.subplot(4, 1, 3)
+#     plt.plot(alphas, l2, color='blue')
+#     plt.plot(alphas, r2, color='red')
+#
+#     plt.subplot(4, 1, 4)
+#     plt.plot(alphas, l3, color='blue')
+#     plt.plot(alphas, r3, color='red')
+#
+#     plt.show()
+#
+#         # legal_results = [result for result in [
+#         #     direct_result, only_first_result, only_second_result, both_arc_result, first_chord_result, second_chord_result]
+#         #                  if result[2] <= budget]
+#
+#     # return min(legal_results, key=lambda r: r[1])
+#
+#
+# if __name__ == '__main__':
+#     source = Coord(0, 200)
+#     target = Coord(700, 50)
+#     c1 = Circle(Coord(200, 100), 100)
+#     c2 = Circle(Coord(500, 100), 100)
+#     two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 200)
+#     # plt.title(f'length {round(length, 2)} risk {round(risk, 2)}')
+#     # plt.gca().set_aspect('equal', adjustable='box')
+#     # path.plot()
+#     # c1.plot()
+#     # c2.plot()
+#     # plt.show()
 
 # if __name__ == '__main__':
 #     target = Coord(400, -100)

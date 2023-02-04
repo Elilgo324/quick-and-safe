@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 from shapely.geometry import LineString
 from shapely.ops import nearest_points
 
@@ -149,11 +148,6 @@ def test_two_threats_switch_s_t_and_circles():
     source = Coord(0, 50)
     target = Coord(400, 125)
     budget = 100
-    circle1.plot()
-    circle2.plot()
-    source.plot()
-    target.plot()
-    plt.show()
     p1, l1, r1 = two_threats_shortest_path_with_budget_constraint(source, target, circle1, circle2, budget)
     p2, l2, r2 = two_threats_shortest_path_with_budget_constraint(target, source, circle1, circle2, budget)
     assert abs(l1 - l2) < 1e-3 and abs(r1 - r2) < 1e-3
