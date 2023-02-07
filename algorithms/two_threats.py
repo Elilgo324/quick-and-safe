@@ -189,11 +189,17 @@ if __name__ == '__main__':
 #     #
 #     # only_second_result = _considering_only_first_circle(source, target, circle2, circle1, budget)
 #
-#     plt.figure(figsize=(10,10))
-#     plt.subplot(4,1,1)
+#     plt.figure(figsize=(10, 10))
+#     plt.subplot(4, 1, 1)
 #     plt.gca().set_aspect('equal', adjustable='box')
 #     circle1.plot()
 #     circle2.plot()
+#     source.plot()
+#     target.plot()
+#
+#     a1 = []
+#     a2 = []
+#     a3 = []
 #
 #     l1 = []
 #     l2 = []
@@ -203,44 +209,55 @@ if __name__ == '__main__':
 #     r2 = []
 #     r3 = []
 #
-#     alphas = arange(0,0.51,0.1)
+#     alphas = arange(0, 1.01, 0.1)
 #     for alpha in tqdm(alphas):
 #         b1, b2 = alpha * budget, (1 - alpha) * budget
 #         both_arc_result = _both_walking_on_arc(source, target, circle1, circle2, b1, b2)
-#         l1.append(both_arc_result[1])
-#         r1.append(both_arc_result[2])
+#         if both_arc_result[2] <= budget:
+#             a1.append(alpha)
+#             l1.append(both_arc_result[1])
+#             r1.append(both_arc_result[2])
 #
 #         first_chord_result = _first_walking_on_chord(source, target, circle1, circle2, b1, b2)
-#         l2.append(first_chord_result[1])
-#         r2.append(first_chord_result[2])
+#         if first_chord_result[2] <= budget:
+#             a2.append(alpha)
+#             l2.append(first_chord_result[1])
+#             r2.append(first_chord_result[2])
 #
 #         second_chord_result = _second_walking_on_chord(source, target, circle1, circle2, b1, b2)
-#         l3.append(second_chord_result[1])
-#         r3.append(second_chord_result[2])
+#         if second_chord_result[2] <= budget:
+#             a3.append(alpha)
+#             l3.append(second_chord_result[1])
+#             r3.append(second_chord_result[2])
 #
 #     plt.subplot(4, 1, 2)
-#     plt.plot(alphas, l1, color='blue')
-#     plt.plot(alphas, r1, color='red')
+#     plt.ylabel('arcs')
+#     plt.plot(a1, l1, color='blue')
+#     # plt.plot(a1, r1, color='red')
 #
 #     plt.subplot(4, 1, 3)
-#     plt.plot(alphas, l2, color='blue')
-#     plt.plot(alphas, r2, color='red')
+#     plt.ylabel('first')
+#     plt.plot(a2, l2, color='blue')
+#     # plt.plot(a2, r2, color='red')
 #
 #     plt.subplot(4, 1, 4)
-#     plt.plot(alphas, l3, color='blue')
-#     plt.plot(alphas, r3, color='red')
+#     plt.ylabel('second')
+#     plt.plot(a3, l3, color='blue')
+#     # plt.plot(a3, r3, color='red')
 #
 #     plt.show()
 #
-#         # legal_results = [result for result in [
-#         #     direct_result, only_first_result, only_second_result, both_arc_result, first_chord_result, second_chord_result]
-#         #                  if result[2] <= budget]
+#     # legal_results = [result for result in [
+#     #     direct_result, only_first_result, only_second_result, both_arc_result, first_chord_result, second_chord_result]
+#     #                  if result[2] <= budget]
 #
 #     # return min(legal_results, key=lambda r: r[1])
 #
 #
+# #
+# #
 # if __name__ == '__main__':
-#     source = Coord(0, 200)
+#     source = Coord(0, 50)
 #     target = Coord(700, 50)
 #     c1 = Circle(Coord(200, 100), 100)
 #     c2 = Circle(Coord(500, 100), 100)
