@@ -74,6 +74,6 @@ class Coord(Entity):
     def __repr__(self):
         return self.__str__()
 
-    def plot(self):
+    def plot(self, color='green'):
         plt.scatter(self.x, self.y, s=20, color='black', zorder=10)
-        plt.scatter(self.x, self.y, s=10, color='green', zorder=11)
+        plt.scatter(self.x, self.y, s=10, color=color, zorder=11)
