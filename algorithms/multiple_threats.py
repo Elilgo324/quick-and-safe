@@ -1,7 +1,5 @@
 from typing import List, Tuple
 
-from shapely import LineString
-
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.path import Path
@@ -11,10 +9,20 @@ def multiple_threats_shortest_path(source: Coord, target: Coord, circles: List[C
     path = Path([source, target])
 
     threat_intersection_length = sum(
-        [LineString(path.to_shapely.intersection(circle.inner_polygon)).length for circle in circles]
+        [path.to_shapely.intersection(circle.inner_polygon).length for circle in circles]
     )
 
     return path, path.length, threat_intersection_length
+
+
+MID_TARGET_STEP = 5
+
+
+def multiple_threats_shortest_path_with_budget_constraint_discretized_mid_targets(
+        source: Coord, target: Coord, circles: List[Circle], budget: float, budgets: Tuple[float, float]
+) -> Tuple[Path, float, float]:
+    # TBD do with bottleneck logic
+    pass
 
 
 def multiple_threats_shortest_path_with_budget_constraint(

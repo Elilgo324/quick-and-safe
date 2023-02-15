@@ -4,8 +4,8 @@ from typing import List, Dict
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, LineString
 
-from geometry.coord import Coord
 from geometry.circle import Circle
+from geometry.coord import Coord
 
 
 class Environment:
@@ -135,7 +135,7 @@ class Environment:
         """
         segment = LineString([u, v])
         return {'length': segment.length,
-                'risk': sum([threat.compute_path_risk([u, v]) for threat in self.threats])}
+                'risk': sum([threat.path_intersection([u, v]) for threat in self.threats])}
 
     def compute_path_attributes(self, path: List[Coord]) -> Dict[str, float]:
         """Computes the attributes of a given path

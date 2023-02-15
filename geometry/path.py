@@ -1,7 +1,7 @@
 from typing import List
 
 import matplotlib.pyplot as plt
-from shapely import LineString
+from shapely.geometry import LineString
 
 from geometry.coord import Coord
 from geometry.entity import Entity
@@ -53,6 +53,9 @@ class Path(Entity):
 
     def __eq__(self, other: 'Path') -> bool:
         return all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)])
+
+    def __getitem__(self, idx: int) -> 'Coord':
+        return self.coords[idx]
 
     @classmethod
     def concat_paths(cls, path1: 'Path', path2: 'Path') -> 'Path':

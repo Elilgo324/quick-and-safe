@@ -1,11 +1,10 @@
 import math
 
+from geometry.coord import Coord
 from geometry.geometric import is_left_side_of_line, calculate_angle_on_chord, \
     calculate_non_directional_angle_of_line, calculate_directional_angle_of_line, \
     calculate_points_in_distance_on_circle, calculate_contact_points_with_circle_from_point, \
-    calculate_arc_length_on_chord
-from geometry.coord import Coord
-from geometry.segment import Segment
+    calculate_arc_length_on_chord, calculate_outer_tangent_points_of_circles, calculate_inner_tangent_points_of_circles
 
 
 def test_is_left_side_of_line():
@@ -102,11 +101,65 @@ def test_calculate_points_in_distance_on_circle():
     assert abs(p1.distance_to(center) - radius) < 1e-8
 
 
-if __name__ == '__main__':
-    test_is_left_side_of_line()
-    test_calculate_contact_points_with_circle_from_point()
-    test_calculate_angle_on_chord()
-    test_calculate_arc_length_on_chord()
-    test_calculate_non_directional_angle_of_line()
-    test_calculate_directional_angle_of_line()
-    test_calculate_points_in_distance_on_circle()
+def test_pairs_of_outer_tangent_points_on_circle():
+    center1 = Coord(100, 100)
+    center2 = Coord(500, 100)
+    radius = 100
+    assert set(calculate_outer_tangent_points_of_circles(center1, radius, center2, radius)) \
+           == {Coord(100, 200), Coord(100, 0), Coord(500, 200), Coord(500, 0)}
+
+    center1 = Coord(-200, 100)
+    center2 = Coord(200, 300)
+    radius1 = 300
+    radius2 = 100
+    result = calculate_outer_tangent_points_of_circles(center1, radius1, center2, radius2)
+    gt = [Coord(-200, 400), Coord(40, -80), Coord(200, 400), Coord(280, 240)]
+    assert all([c1.almost_equal(c2) for c1, c2 in zip(result, gt)])
+
+    center1 = Coord(0, 150)
+    center2 = Coord(0, 0)
+    radius1 = 50
+    radius2 = 90
+    result = calculate_outer_tangent_points_of_circles(center1, radius1, center2, radius2)
+    print(result)
+    gt = [Coord(-48.18944098, 163.33333333), Coord(48.18944098, 163.3333333), Coord(-86.740993, 24),
+          Coord(86.74099376, 24)]
+    assert all([c1.almost_equal(c2) for c1, c2 in zip(result, gt)])
+
+    center1 = Coord(100, 300)
+    center2 = Coord(-100, 100)
+    radius1 = 100
+    radius2 = 300
+    assert set(calculate_outer_tangent_points_of_circles(center1, radius1, center2, radius2)) \
+           == set(calculate_outer_tangent_points_of_circles(center2, radius2, center1, radius1))
+
+
+def test_pairs_of_inner_tangent_points_on_circle():
+    center1 = Coord(100, 100)
+    center2 = Coord(500, 100)
+
+    radius = 100
+
+    t1, t2, t3, t4 = calculate_inner_tangent_points_of_circles(center1, radius, center2, radius)
+
+    assert t1.distance_to(t2) == t3.distance_to(t4)
+    assert abs(t1.distance_to(t3) - t2.distance_to(t4)) < 1e-3
+    assert t1.distance_to(center1) < t3.distance_to(center1)
+
+    t1, t2, t3, t4 = calculate_inner_tangent_points_of_circles(center1, radius, center2, 2 * radius)
+
+    assert t1.distance_to(t2) < t3.distance_to(t4)
+    assert abs(t1.distance_to(t3) - t2.distance_to(t4)) < 1e-3
+    assert t1.distance_to(center1) < t3.distance_to(center1)
+
+    t1, t2, t3, t4 = calculate_inner_tangent_points_of_circles(center2, radius, center1, radius)
+
+    assert t1.distance_to(t2) == t3.distance_to(t4)
+    assert abs(t1.distance_to(t3) - t2.distance_to(t4)) < 1e-3
+    assert t1.distance_to(center2) < t3.distance_to(center2)
+
+    t1, t2, t3, t4 = calculate_inner_tangent_points_of_circles(center2, radius, center1, 2 * radius)
+
+    assert t1.distance_to(t2) < t3.distance_to(t4)
+    assert abs(t1.distance_to(t3) - t2.distance_to(t4)) < 1e-3
+    assert t1.distance_to(center2) < t3.distance_to(center2)

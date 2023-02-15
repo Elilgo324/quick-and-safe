@@ -1,10 +1,10 @@
 import math
 from typing import Tuple
 
-from shapely import Point
+import matplotlib.pyplot as plt
+from shapely.geometry import Point
 
 from geometry.entity import Entity
-import matplotlib.pyplot as plt
 
 
 class Coord(Entity):
@@ -71,6 +71,9 @@ class Coord(Entity):
     def __str__(self):
         return f'Coord({self.x},{self.y})'
 
-    def plot(self):
+    def __repr__(self):
+        return self.__str__()
+
+    def plot(self, color='green'):
         plt.scatter(self.x, self.y, s=20, color='black', zorder=10)
-        plt.scatter(self.x, self.y, s=10, color='green', zorder=11)
+        plt.scatter(self.x, self.y, s=10, color=color, zorder=11)
