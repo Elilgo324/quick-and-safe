@@ -96,6 +96,27 @@ def calculate_points_in_distance_on_circle(center: Coord, radius: float, point: 
     return point1, point2
 
 
+def calculate_outer_tangent_angles_of_circles(center1: Coord, radius1: float, center2: Coord, radius2: float) \
+        -> Tuple[float, float]:
+    """Calculate the two pairs of tangent points of two circles
+
+    :param center1: the center of circle1
+    :param radius1: the radius of circle1
+    :param center2: the center of circle2
+    :param radius2: the radius of circle2
+    :return: the two angles of tangent points of two circles
+    """
+    centers_segment_length = center1.distance_to(center2)
+    centers_segment_angle = calculate_directional_angle_of_line(center1, center2) % math.pi
+
+    theta = math.acos(abs(radius1 - radius2) / centers_segment_length)
+
+    upper_theta = centers_segment_angle + theta
+    lower_theta = centers_segment_angle - theta
+
+    return upper_theta, lower_theta
+
+
 def calculate_outer_tangent_points_of_circles(center1: Coord, radius1: float, center2: Coord, radius2: float) \
         -> Tuple[Coord, Coord, Coord, Coord]:
     """Calculate the two pairs of tangent points of two circles
@@ -106,13 +127,7 @@ def calculate_outer_tangent_points_of_circles(center1: Coord, radius1: float, ce
     :param radius2: the radius of circle2
     :return: the two pairs of tangent points of two circles
     """
-    centers_segment_length = center1.distance_to(center2)
-    centers_segment_angle = calculate_directional_angle_of_line(center1, center2) % math.pi
-
-    theta = math.acos(abs(radius1 - radius2) / centers_segment_length)
-
-    upper_theta = centers_segment_angle + theta
-    lower_theta = centers_segment_angle - theta
+    upper_theta, lower_theta = calculate_outer_tangent_angles_of_circles(center1, radius1, center2, radius2)
 
     return center1.shifted(radius1, upper_theta), center1.shifted(radius1, lower_theta), \
            center2.shifted(radius2, upper_theta), center2.shifted(radius2, lower_theta)
