@@ -1,9 +1,8 @@
 import math
-from typing import Tuple, List
-from shapely.geometry.point import Point
-from math import sqrt, acos, atan2, sin, cos
-import matplotlib.pyplot as plt
-from settings.coord import Coord
+from math import atan2
+from typing import Tuple
+
+from geometry.coord import Coord
 
 
 def is_left_side_of_line(line_point1: Coord, line_point2: Coord, point: Coord) -> bool:
@@ -35,7 +34,7 @@ def calculate_angle_on_chord(chord: float, radius: float) -> float:
     :param radius: the radius of the circle
     :return: the central angle that is supported by a given chord
     """
-    return 2 * math.asin(0.5 * chord / radius)
+    return 2 * math.asin(min(0.5 * chord / radius, 1))
 
 
 def calculate_arc_length_on_chord(chord: float, radius: float) -> float:
@@ -89,8 +88,9 @@ def calculate_points_in_distance_on_circle(center: Coord, radius: float, point: 
     :param chord: the chord
     :return: the two points on the circle in this specific length
     """
+    chord = min(chord, 2 * radius)
     angle_on_chord = calculate_angle_on_chord(chord, radius)
     angle_of_point = calculate_directional_angle_of_line(start=center, end=point)
-    point1 = center.shift(distance=radius, angle=angle_of_point + angle_on_chord)
-    point2 = center.shift(distance=radius, angle=angle_of_point - angle_on_chord)
+    point1 = center.shifted(distance=radius, angle=angle_of_point + angle_on_chord)
+    point2 = center.shifted(distance=radius, angle=angle_of_point - angle_on_chord)
     return point1, point2

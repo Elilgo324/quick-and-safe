@@ -1,21 +1,11 @@
 import math
 
-import networkx as nx
-
-from algorithms.geometric import calculate_points_in_distance_on_circle, calculate_directional_angle_of_line
-from algorithms.planning import single_threat_shortest_path_with_risk_constraint
-from roadmap.grid import Grid
-from roadmap.prm import PRM
-from roadmap.rrg import RRG
-from settings.coord import Coord
-from settings.environment import Environment
-from settings.threat import Threat
-from roadmap.visibility_roadmap import VisibilityRoadmap
+from geometry.geometric import calculate_points_in_distance_on_circle, calculate_directional_angle_of_line
+from geometry.coord import Coord
+from environment.environment import Environment
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-from matplotlib.lines import Line2D
 
-from settings.threat import Threat
+from geometry.circle import Circle
 
 if __name__ == '__main__':
     center = Coord(0, 0)
@@ -23,13 +13,13 @@ if __name__ == '__main__':
     source = Coord(-10, -2)
     target = Coord(5, 2)
     risk_limit = 6
-    threat = Threat(center, radius)
+    threat = Circle(center, radius)
     env = Environment(source=Coord(0, 0), target=Coord(1000, 1000), num_threats=1, seed_value=27)
     env._threats = [threat]
 
 
     def path_length(theta, limit):
-        entrance_point = center.shift(distance=radius, angle=theta)
+        entrance_point = center.shifted(distance=radius, angle=theta)
 
         from_source = source.distance(entrance_point)
 
@@ -76,7 +66,7 @@ if __name__ == '__main__':
     plt.plot(X, Y)
     plt.scatter(source.x, source.y, color='blue')
     plt.scatter(target.x, target.y, color='blue')
-    entry = center.shift(distance=radius, angle=min_theta)
+    entry = center.shifted(distance=radius, angle=min_theta)
     second_point1, second_point2 = calculate_points_in_distance_on_circle(center, radius, entry, risk_limit)
     path = [source, entry,
             min([second_point1, second_point2], key=lambda x: x.distance(target)),

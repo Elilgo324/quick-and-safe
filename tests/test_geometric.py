@@ -1,10 +1,11 @@
 import math
 
-from algorithms.geometric import is_left_side_of_line, calculate_angle_on_chord, \
+from geometry.geometric import is_left_side_of_line, calculate_angle_on_chord, \
     calculate_non_directional_angle_of_line, calculate_directional_angle_of_line, \
     calculate_points_in_distance_on_circle, calculate_contact_points_with_circle_from_point, \
     calculate_arc_length_on_chord
-from settings.coord import Coord
+from geometry.coord import Coord
+from geometry.segment import Segment
 
 
 def test_is_left_side_of_line():
@@ -95,10 +96,10 @@ def test_calculate_points_in_distance_on_circle():
     point = Coord(-3, -9)
     chord = 3.24
     p1, p2 = calculate_points_in_distance_on_circle(center, radius, point, chord)
-    assert abs(p1.distance(point) - p2.distance(point)) < 1e-8
-    assert abs(p1.distance(point) - chord) < 1e-8
-    assert abs(p1.distance(center) - p2.distance(center)) < 1e-8
-    assert abs(p1.distance(center) - radius) < 1e-8
+    assert abs(p1.distance_to(point) - p2.distance_to(point)) < 1e-8
+    assert abs(p1.distance_to(point) - chord) < 1e-8
+    assert abs(p1.distance_to(center) - p2.distance_to(center)) < 1e-8
+    assert abs(p1.distance_to(center) - radius) < 1e-8
 
 
 if __name__ == '__main__':

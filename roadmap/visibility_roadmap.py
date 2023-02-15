@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from settings.environment import Environment
+from environment.environment import Environment
 from roadmap.roadmap import Roadmap
 from itertools import combinations
 

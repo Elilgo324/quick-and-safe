@@ -1,10 +1,6 @@
-from copy import deepcopy
-
-from settings.coord import Coord
-from settings.environment import Environment
+from geometry.coord import Coord
+from environment.environment import Environment
 from roadmap.roadmap import Roadmap
-from itertools import combinations
-
 
 GRID_STEP = 50
 
