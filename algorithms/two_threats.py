@@ -7,8 +7,11 @@ from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint
 from geometry.circle import Circle
 from geometry.coord import Coord
-from geometry.geometric import calculate_outer_tangent_angles_of_circles
+from geometry.geometric import calculate_outer_tangent_points_of_circles
 from geometry.path import Path
+from geometry.segment import Segment
+
+EPSILON = 1
 
 
 def two_threats_shortest_path(source: Coord, target: Coord, circle1: Circle, circle2: Circle) \
@@ -16,103 +19,79 @@ def two_threats_shortest_path(source: Coord, target: Coord, circle1: Circle, cir
     return multiple_threats_shortest_path(source, target, [circle1, circle2])
 
 
-MID_TARGET_STEP = 5
+def _considering_both_circles(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float,
+                              alpha: float = 0.5
+                              ) -> Tuple[Path, float, float]:
+    b1, b2 = alpha * budget, (1 - alpha) * budget
 
-
-def _first_st_planning(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
-        -> Tuple[Path, float, float]:
+    circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
+                           key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
     center1, center2 = circle1.center, circle2.center
     radius1, radius2 = circle1.radius, circle2.radius
 
-    def L(theta1: float) -> Path:
-        p1_o = center1.shifted(radius1, theta1)
+    centers_segment = Segment(center1, center2)
+    centers_distance = centers_segment.length
+    centers_angle = centers_segment.angle
 
-        b2 = budget - circle1.path_intersection(Path([source, p1_o]))
+    point_between = center1.shifted((radius1 + (centers_distance - radius2)) / 2, centers_angle)
+    partition = Segment(
+        point_between.shifted(max(radius1, radius2) + EPSILON, centers_angle + 0.5 * math.pi),
+        point_between.shifted(max(radius1, radius2) + EPSILON, centers_angle - 0.5 * math.pi)
+    )
 
-        second_circle_path = single_threat_shortest_path_with_budget_constraint(p1_o, target, circle2, b2)
+    cp1_upper, cp1_lower, cp2_upper, cp2_lower = calculate_outer_tangent_points_of_circles(center1, radius1, center2,
+                                                                                           radius2)
+    upper_tangent = Segment(cp1_upper, cp2_upper)
+    lower_tangent = Segment(cp1_lower, cp2_lower)
 
-        return Path.concat_paths(Path([source, p1_o]), second_circle_path[0])
+    partition = (partition.to_shapely.intersection(upper_tangent.to_shapely),
+                 partition.to_shapely.intersection(lower_tangent.to_shapely))
+    partition = Segment(Coord(partition[0].x, partition[0].y), Coord(partition[1].x, partition[1].y))
 
-    upper_theta, lower_theta = calculate_outer_tangent_angles_of_circles(center1, radius1, center2, radius2)
-    theta1 = min(np.arange(lower_theta, upper_theta, 0.1), key=lambda theta: L(theta).length)
-    path = L(theta1)
-
-    return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
-
-
-def _first_circumference_planning(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
-        -> Tuple[Path, float, float]:
-    center1, center2 = circle1.center, circle2.center
-    radius1, radius2 = circle1.radius, circle2.radius
-
-    def L(theta1: float) -> Path:
-        p1_l = center1.shifted(radius1, theta1)
-        p1_o = circle1.calculate_exit_point(p1_l, b1, source)
-
-        s_contact1, s_contact2 = source.contact_points_with_circle(circle1.center, circle1.radius)
-        s_contact = min([s_contact1, s_contact2], key=lambda sc: sc.distance_to(p1_o))
-
-        second_circle_path = single_threat_shortest_path_with_budget_constraint(p1_l, target, circle2, b2)
-
+    def L(d: float) -> Path:
+        mid_target = partition.start.shifted(d, partition.angle)
         return Path.concat_paths(
-            Path([source, s_contact, p1_o] + circle1.get_boundary_between(p1_o, p1_l)), second_circle_path[0])
+            single_threat_shortest_path_with_budget_constraint(source, mid_target, circle1, b1)[0],
+            single_threat_shortest_path_with_budget_constraint(mid_target, target, circle2, b2)[0]
+        )
 
-    upper_theta, lower_theta = calculate_outer_tangent_angles_of_circles(center1, radius1, center2, radius2)
-    theta1 = min(np.arange(lower_theta, upper_theta, 0.1), key=lambda theta: L(theta).length)
-    path = L(theta1)
-
+    d_star = min(np.arange(0, partition.length, 1), key=lambda d: L(d).length)
+    path = L(d_star)
     return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
 
 
-def _first_chord_planning(source: Coord, target: Coord, circle1: Circle, circle2: Circle, b1: float, b2: float) \
+def _considering_only_first_circle(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
         -> Tuple[Path, float, float]:
-    center1, center2 = circle1.center, circle2.center
-    radius1, radius2 = circle1.radius, circle2.radius
-
-    def L(theta1: float) -> Path:
-        p1_i = center1.shifted(radius1, theta1)
-        p1_o = circle1.calculate_exit_point(p1_i, b1, target)
-        print(p1_o)
-
-        second_circle_path = single_threat_shortest_path_with_budget_constraint(p1_o, target, circle2, b2)
-
-        return Path.concat_paths(Path([source, p1_i, p1_o]), second_circle_path[0])
-
-    upper_theta, lower_theta = calculate_outer_tangent_angles_of_circles(center1, radius1, center2, radius2)
-    theta1 = min(np.arange(math.pi + lower_theta, math.pi + upper_theta, 0.1), key=lambda theta: L(theta).length)
-    path = L(theta1)
-
-    return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
+    path, length, risk = single_threat_shortest_path_with_budget_constraint(target, source, circle1, budget)
+    return path, length, risk + circle2.path_intersection(path)
 
 
 def two_threats_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float, alpha: float = 0.5
 ) -> Tuple[Path, float, float]:
-    circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
-                           key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
+    direct_result = two_threats_shortest_path(source, target, circle1, circle2)
+    if direct_result[2] <= budget:
+        return direct_result
 
-    first_st_result = _first_st_planning(source, target, circle1, circle2, budget)
+    only_first_result = _considering_only_first_circle(source, target, circle1, circle2, budget)
 
-    b1, b2 = alpha * budget, (1 - alpha) * budget
+    only_second_result = _considering_only_first_circle(source, target, circle2, circle1, budget)
 
-    first_circumference_result = _first_circumference_planning(source, target, circle1, circle2, b1, b2)
+    both_result = _considering_both_circles(source, target, circle2, circle1, budget, alpha)
 
-    first_chord_result = _first_chord_planning(source, target, circle1, circle2, b1, b2)
+    legal_results = [result for result in [only_first_result, only_second_result, both_result] if result[2] <= budget]
 
-    legal_results = [result for result in [first_st_result, first_circumference_result, first_chord_result]
-                     if result[2] <= budget]
-    return first_circumference_result
-    # return min(legal_results, key=lambda r: r[1])
+    return min(legal_results, key=lambda r: r[1])
 
 
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     c1 = Circle(Coord(200, 100), 100)
-    c2 = Circle(Coord(400, 110), 75)
+    c2 = Circle(Coord(440, 80), 75)
     source = Coord(0, 170)
-    target = Coord(500, 120)
-    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 300)
+    target = Coord(540, 40)
+    path, length, risk = two_threats_shortest_path_with_budget_constraint(source, target, c1, c2, 342, 0.5)
     plt.title(f'length {round(length, 2)} risk {round(risk, 2)}')
     plt.gca().set_aspect('equal', adjustable='box')
     path.plot()
