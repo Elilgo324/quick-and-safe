@@ -70,5 +70,5 @@ class Segment(Entity):
     def almost_equal(self, other: 'Segment') -> bool:
         return other.start.almost_equal(self.start) and other.end.almost_equal(self.end)
 
-    def plot(self):
-        plt.plot([self.start.x, self.end.x], [self.start.y, self.end.y], color='green', zorder=10)
+    def plot(self, color='green'):
+        plt.plot([self.start.x, self.end.x], [self.start.y, self.end.y], color=color, zorder=10)

@@ -10,6 +10,8 @@ from geometry.geometric import calculate_points_in_distance_on_circle, \
     calculate_angle_on_chord, calculate_directional_angle_of_line
 from geometry.path import Path
 
+INF = 10_000
+
 
 def single_threat_shortest_path(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
     return multiple_threats_shortest_path(source, target, [circle])
@@ -27,8 +29,12 @@ def single_threat_safest_path(source: Coord, target: Coord, circle: Circle) -> T
     return _walking_on_arc(source, target, circle, budget=0)
 
 
-def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float) -> Tuple[Path, float, float]:
+def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float, ignore_error: bool = False) -> Tuple[
+    Path, float, float]:
     s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
+    if not ignore_error and budget > s_contact.distance_to(t_contact):
+        raise Exception(f'budget {round(budget, 2)} is wasteful for walking on arc '
+                        f'({round(s_contact.distance_to(t_contact), 2)} required)')
 
     ep1, ep2 = calculate_points_in_distance_on_circle(circle.center, circle.radius, s_contact, budget)
     exit_point = min([ep1, ep2], key=lambda p: p.distance_to(t_contact))
@@ -37,8 +43,13 @@ def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float)
     return path, path.length, budget
 
 
-def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: float) -> Tuple[Path, float, float]:
+def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: float, ignore_error: bool = False) -> Tuple[
+    Path, float, float]:
     s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
+    if not ignore_error and budget < s_contact.distance_to(t_contact):
+        raise Exception(f'budget {round(budget, 2)} is not enough for walking on chord '
+                        f'({round(s_contact.distance_to(t_contact), 2)} required)')
+
     center = circle.center
     radius = circle.radius
 
@@ -87,9 +98,15 @@ def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: floa
 def single_threat_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle: Circle, budget: float
 ) -> Tuple[Path, float, float]:
+    # case 1: budget enough for direct path
     direct_result = single_threat_shortest_path(source, target, circle)
-    arc_result = _walking_on_arc(source, target, circle, budget)
-    chord_result = _walking_on_chord(source, target, circle, budget)
+    if direct_result[2] <= budget:
+        return direct_result
 
-    legal_results = [result for result in [direct_result, arc_result, chord_result] if result[2] <= budget]
-    return min(legal_results, key=lambda r: r[1])
+    # case 2: budget is over contact points
+    s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
+    if budget >= s_contact.distance_to(t_contact):
+        return _walking_on_chord(source, target, circle, budget)
+
+    # case 3: budget is under contact points
+    return _walking_on_arc(source, target, circle, budget)
