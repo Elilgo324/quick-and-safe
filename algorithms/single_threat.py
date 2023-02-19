@@ -26,6 +26,9 @@ def _compute_s_t_contact_points(source: Coord, target: Coord, circle: Circle) ->
 
 
 def single_threat_safest_path(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
+    direct_result = single_threat_shortest_path(source, target, circle)
+    if direct_result[2] == 0:
+        return direct_result
     return _walking_on_arc(source, target, circle, budget=0)
 
 
