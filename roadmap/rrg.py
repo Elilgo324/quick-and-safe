@@ -1,9 +1,9 @@
 import math
 from typing import List
 
-from roadmap.roadmap import Roadmap
-from geometry.coord import Coord
 from environment.environment import Environment
+from geometry.coord import Coord
+from roadmap.roadmap import Roadmap
 
 
 class RRG(Roadmap):
@@ -14,10 +14,10 @@ class RRG(Roadmap):
         self._steering_coefficient = 5
 
     def _near(self, point: Coord) -> List[Coord]:
-        return [Coord(*p) for p in self.graph.nodes if Coord(*p).distance(point) < self._near_radius]
+        return [Coord(*p) for p in self.graph.nodes if Coord(*p).distance_to(point) < self._near_radius]
 
     def _nearest(self, point: Coord) -> Coord:
-        return min([Coord(*p) for p in self.graph.nodes], key=lambda p:point.distance(p))
+        return min([Coord(*p) for p in self.graph.nodes], key=lambda p: point.distance_to(p))
 
     def add_samples(self, iterations: int) -> None:
         for _ in range(iterations):

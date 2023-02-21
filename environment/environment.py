@@ -2,10 +2,12 @@ from random import randint, seed
 from typing import List, Dict
 
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon, LineString
+from shapely.geometry import Polygon
 
 from geometry.circle import Circle
 from geometry.coord import Coord
+from geometry.path import Path
+from geometry.segment import Segment
 
 
 class Environment:
@@ -96,16 +98,9 @@ class Environment:
                 return False
         return True
 
-    def is_safe_edge(self, u: Coord, v: Coord) -> bool:
-        """Checks if an edge uv intersects threat
-
-        :param u: the first coord of the edge
-        :param v: the second coord of the edge
-        :return: if the edge does not intersect threat
-        """
-        line = LineString([u, v])
+    def is_safe_edge(self, segment: Segment) -> bool:
         for threat_polygon in self.threats_polygons:
-            if line.intersects(threat_polygon):
+            if segment.to_shapely.intersects(threat_polygon):
                 return False
         return True
 
@@ -126,24 +121,12 @@ class Environment:
                 self.threats_polygons, (self.x_range, self.y_range))
             self._threats.append(new_threat)
 
-    def compute_segment_attributes(self, u: Coord, v: Coord) -> Dict[str, float]:
-        """Computes the attributes of a given edge uv
-
-        :param u: the first point of the edge
-        :param v: the second point of the edge
-        :return: the attributes of the segment
-        """
-        segment = LineString([u, v])
+    def compute_segment_attributes(self, segment: Segment) -> Dict[str, float]:
         return {'length': segment.length,
-                'risk': sum([threat.path_intersection([u, v]) for threat in self.threats])}
+                'risk': sum([threat.path_intersection(Path([segment.start, segment.end])) for threat in self.threats])}
 
-    def compute_path_attributes(self, path: List[Coord]) -> Dict[str, float]:
-        """Computes the attributes of a given path
-
-        :param path: a path
-        :return: the attributes of the path
-        """
-        segments_attributes = [self.compute_segment_attributes(u, v) for u, v in zip(path[:-1], path[1:])]
+    def compute_path_attributes(self, path: Path) -> Dict[str, float]:
+        segments_attributes = [self.compute_segment_attributes(s) for s in path.segments]
         return {'length': sum(attr['length'] for attr in segments_attributes),
                 'risk': sum(attr['risk'] for attr in segments_attributes)}
 

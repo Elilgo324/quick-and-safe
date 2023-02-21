@@ -3,10 +3,11 @@ from itertools import product
 from typing import Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint, _walking_on_chord, \
-    _walking_on_arc, single_threat_shortest_path
+    _walking_on_arc
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.geometric import calculate_outer_tangent_points_of_circles, calculate_inner_tangent_points_of_circles
@@ -233,8 +234,6 @@ def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circ
                                               alpha: float = 0.5
                                               ) -> Tuple[Path, float, float]:
     b1, b2 = alpha * budget, (1 - alpha) * budget
-    print(b1)
-    print(b2)
 
     circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
                            key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
@@ -262,43 +261,27 @@ def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circ
 
     def L(d: float) -> Path:
         mid_target = partition.start.shifted(d, partition.angle)
-
         return Path.concat_paths(
-            _walking_on_arc(source, mid_target, circle1, b1)[0],
-            single_threat_shortest_path(mid_target, target, circle2)[0]
+            _walking_on_chord(source, mid_target, circle1, b1)[0],
+            _walking_on_arc(mid_target, target, circle2, b2)[0]
         )
 
-    title = f'arc-st length as function of mid target shift (alpha={alpha} budget={budget})'
-
-    plt.subplot(2, 1, 1)
-    plt.title(title)
-    plt.gca().set_aspect('equal', adjustable='box')
-    # path.plot()
-    source.plot()
-    target.plot()
-    c1.plot()
-    c2.plot()
-
-    plt.subplot(2, 1, 2)
-    ds = np.arange(0, partition.length, 1)
-    shifts = []
-    lengths = []
-    for d in ds:
+    d_star = None
+    l_star = 10_000
+    for d in np.arange(0, partition.length, 1):
         try:
-            path = L(d)
-            if circle1.path_intersection(path) + circle2.path_intersection(path) <= budget:
-                shifts.append(d)
-                lengths.append(path.length)
+            l = L(d).length
+            if l < l_star:
+                l_star = l
+                d_star = d
         except:
             pass
 
-    plt.plot(shifts, lengths)
+    if d_star is None:
+        raise Exception(f'no d star found')
 
-    # plt.show()
-    plt.savefig(title + '.png')
-
-    # d_star = min(np.arange(0, partition.length, 0.5), key=lambda d: L(d).length)
-    # path = L(d_star)
+    path = L(d_star)
+    return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
 
 
 def two_threats_shortest_path_with_budget_constraint_blackbox_method(
@@ -314,10 +297,10 @@ def two_threats_shortest_path_with_budget_constraint_blackbox_method(
 
     both_result = _considering_both_circles_blackbox_method(source, target, circle1, circle2, budget, alpha)
 
-    # legal_results = [both_result] + [result for result in [only_first_result, only_second_result] if
-    #                                  result[2] <= budget]
-    #
-    # return min(legal_results, key=lambda r: r[1])
+    legal_results = [both_result] + [result for result in [only_first_result, only_second_result] if
+                                     result[2] <= budget]
+
+    return min(legal_results, key=lambda r: r[1])
 
 
 import matplotlib.pyplot as plt
@@ -328,31 +311,34 @@ if __name__ == '__main__':
     source = Coord(0, 125)
     target = Coord(500, 150)
     budget = 300
-    two_threats_shortest_path_with_budget_constraint_blackbox_method(
-        source, target, c1, c2, budget, 0.2)
-    # plt.subplot(2, 1, 1)
-    # title = f'length as function of alpha (budget={budget})'
-    # # plt.title(f'length {round(length, 2)} risk {round(risk, 2)}')
-    # plt.title(title)
-    # plt.gca().set_aspect('equal', adjustable='box')
-    # # path.plot()
-    # source.plot()
-    # target.plot()
-    # c1.plot()
-    # c2.plot()
-    #
-    # plt.subplot(2, 1, 2)
-    # alphas = np.arange(0, 1, 0.025)
-    # lengths = []
-    # for alpha in tqdm(alphas):
-    #     _, length, _ = two_threats_shortest_path_with_budget_constraint_blackbox_method(
-    #         source, target, c1, c2, budget, alpha)
-    #     lengths.append(length)
-    #     print(length)
-    # plt.plot(alphas, lengths)
-    #
+    # two_threats_shortest_path_with_budget_constraint_blackbox_method(
+    #     source, target, c1, c2, budget, 0.2)
+    plt.subplot(2, 1, 1)
+    title = f'st-st length as function of alpha (budget={budget})'
+    plt.title(title)
+    plt.gca().set_aspect('equal', adjustable='box')
+    # path.plot()
+    source.plot()
+    target.plot()
+    c1.plot()
+    c2.plot()
+
+    plt.subplot(2, 1, 2)
+    alphas = np.arange(0, 1.01, 0.025)
+    als = []
+    lengths = []
+    for alpha in tqdm(alphas):
+        try:
+            path, length, _ = _considering_both_circles_blackbox_method(
+                source, target, c1, c2, budget, alpha)
+            als.append(alpha)
+            lengths.append(length)
+        except:
+            pass
+    plt.plot(als, lengths)
+
     # plt.show()
-    # plt.savefig(title + '.png')
+    plt.savefig(title + '.png')
 
 # if __name__ == '__main__':
 #     c1 = Circle(Coord(200, 100), 100)

@@ -32,6 +32,14 @@ def single_threat_safest_path(source: Coord, target: Coord, circle: Circle) -> T
     return _walking_on_arc(source, target, circle, budget=0)
 
 
+def _walking_straight(source: Coord, target: Coord, circle: Circle, budget: float, ignore_error: bool = False) -> Tuple[
+    Path, float, float]:
+    path, length, risk = single_threat_shortest_path(source, target, circle)
+    if not ignore_error and budget < risk:
+        raise Exception(f'budget {round(budget, 2)} is not sufficient for straight path with risk {round(risk, 2)}')
+    return path, length, risk
+
+
 def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float, ignore_error: bool = False) -> Tuple[
     Path, float, float]:
     s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
@@ -102,9 +110,8 @@ def single_threat_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle: Circle, budget: float
 ) -> Tuple[Path, float, float]:
     # case 1: budget enough for direct path
-    direct_result = single_threat_shortest_path(source, target, circle)
-    if direct_result[2] <= budget:
-        return direct_result
+    if circle.path_intersection(Path([source, target])) <= budget:
+        return _walking_straight(source, target, circle, budget)
 
     # case 2: budget is over contact points
     s_contact, t_contact = _compute_s_t_contact_points(source, target, circle)
