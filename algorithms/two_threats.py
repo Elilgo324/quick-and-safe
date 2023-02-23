@@ -231,7 +231,7 @@ def two_threats_shortest_path_with_budget_constraint(
 
 def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circle1: Circle, circle2: Circle,
                                               budget: float,
-                                              alpha: float = 0.5
+                                              alpha: float = 0.5, is_plot=False
                                               ) -> Tuple[Path, float, float]:
     b1, b2 = alpha * budget, (1 - alpha) * budget
 
@@ -262,23 +262,26 @@ def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circ
     def L(d: float) -> Path:
         mid_target = partition.start.shifted(d, partition.angle)
         return Path.concat_paths(
-            _walking_on_chord(source, mid_target, circle1, b1)[0],
-            _walking_on_arc(mid_target, target, circle2, b2)[0]
+            _walking_on_arc(source, mid_target, circle1, b1, True)[0],
+            _walking_on_chord(mid_target, target, circle2, b2)[0]
         )
 
-    d_star = None
-    l_star = 10_000
-    for d in np.arange(0, partition.length, 1):
+    ds = []
+    lengths = []
+    for d in np.arange(0, partition.length, 0.2):
         try:
-            l = L(d).length
-            if l < l_star:
-                l_star = l
-                d_star = d
+            p = L(d)
+            ds.append(d)
+            lengths.append(p.length)
         except:
-            pass
+            print(f'error with d {d}')
 
-    if d_star is None:
-        raise Exception(f'no d star found')
+    d_star = min(zip(ds, lengths), key=lambda dl: dl[1])[0]
+
+    if is_plot:
+        plt.subplot(3, 1, 2)
+        plt.plot(ds, lengths)
+        plt.ylabel('length(d)')
 
     path = L(d_star)
     return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
@@ -286,7 +289,7 @@ def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circ
 
 def two_threats_shortest_path_with_budget_constraint_blackbox_method(
         source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float, alpha: float = 0.5
-) -> Tuple[Path, float, float]:
+        , is_plot=False) -> Tuple[Path, float, float]:
     direct_result = two_threats_shortest_path(source, target, circle1, circle2)
     if direct_result[2] <= budget:
         return direct_result
@@ -295,7 +298,7 @@ def two_threats_shortest_path_with_budget_constraint_blackbox_method(
 
     only_second_result = _considering_only_first_circle(source, target, circle2, circle1, budget)
 
-    both_result = _considering_both_circles_blackbox_method(source, target, circle1, circle2, budget, alpha)
+    both_result = _considering_both_circles_blackbox_method(source, target, circle1, circle2, budget, alpha, is_plot)
 
     legal_results = [both_result] + [result for result in [only_first_result, only_second_result] if
                                      result[2] <= budget]
@@ -311,19 +314,24 @@ if __name__ == '__main__':
     source = Coord(0, 125)
     target = Coord(500, 150)
     budget = 300
-    # two_threats_shortest_path_with_budget_constraint_blackbox_method(
-    #     source, target, c1, c2, budget, 0.2)
-    plt.subplot(2, 1, 1)
-    title = f'st-st length as function of alpha (budget={budget})'
+    path, _, _ = _considering_both_circles_blackbox_method(
+        source, target, c1, c2, budget, 0.5)
+
+    plt.figure(figsize=(6, 6))
+    plt.subplot(3, 1, 1)
+    title = f'arc-chord length as function of d (alpha=0.5) and alpha (budget={budget})'
     plt.title(title)
     plt.gca().set_aspect('equal', adjustable='box')
-    # path.plot()
+    path.plot()
     source.plot()
     target.plot()
     c1.plot()
     c2.plot()
 
-    plt.subplot(2, 1, 2)
+    _considering_both_circles_blackbox_method(
+        source, target, c1, c2, budget, 0.5, True)
+
+    plt.subplot(3, 1, 3)
     alphas = np.arange(0, 1.01, 0.025)
     als = []
     lengths = []
@@ -335,10 +343,11 @@ if __name__ == '__main__':
             lengths.append(length)
         except:
             pass
+    plt.ylabel('length(alpha)')
     plt.plot(als, lengths)
 
-    # plt.show()
-    plt.savefig(title + '.png')
+    plt.show()
+    # plt.savefig(title + '.png')
 
 # if __name__ == '__main__':
 #     c1 = Circle(Coord(200, 100), 100)

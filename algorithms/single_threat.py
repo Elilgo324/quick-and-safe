@@ -46,6 +46,8 @@ def _walking_on_arc(source: Coord, target: Coord, circle: Circle, budget: float,
     if not ignore_error and budget > s_contact.distance_to(t_contact):
         raise Exception(f'budget {round(budget, 2)} is wasteful for walking on arc '
                         f'({round(s_contact.distance_to(t_contact), 2)} required)')
+    else:
+        budget = min(budget, s_contact.distance_to(t_contact))
 
     ep1, ep2 = calculate_points_in_distance_on_circle(circle.center, circle.radius, s_contact, budget)
     exit_point = min([ep1, ep2], key=lambda p: p.distance_to(t_contact))
@@ -103,7 +105,7 @@ def _walking_on_chord(source: Coord, target: Coord, circle: Circle, budget: floa
 
     path = Path([source, entry_point, exit_point, target])
 
-    return path, path.length, circle.path_intersection(path)
+    return path, path.length, budget
 
 
 def single_threat_shortest_path_with_budget_constraint(
