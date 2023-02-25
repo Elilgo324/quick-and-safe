@@ -61,8 +61,8 @@ class Path(Entity):
     def concat_paths(cls, path1: 'Path', path2: 'Path') -> 'Path':
         return cls(path1.coords + path2.coords)
 
-    def plot(self) -> None:
-        plt.plot([c.x for c in self.coords], [c.y for c in self.coords], color='green', zorder=10)
+    def plot(self, color='green') -> None:
+        plt.plot([c.x for c in self.coords], [c.y for c in self.coords], color=color, zorder=10)
         plt.scatter([c.x for c in self.coords], [c.y for c in self.coords], s=20, color='black', zorder=10)
         plt.scatter([c.x for c in self.coords], [c.y for c in self.coords], s=10, color='green', zorder=11)
         plt.scatter([c.x for c in self.endpoints], [c.y for c in self.endpoints], s=10, color='orange', zorder=12)

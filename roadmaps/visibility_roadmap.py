@@ -1,20 +1,21 @@
 from copy import deepcopy
+from itertools import combinations
+
+from roadmap.roadmap import Roadmap
 
 from environment.environment import Environment
-from roadmap.roadmap import Roadmap
-from itertools import combinations
 
 
 class VisibilityRoadmap(Roadmap):
     def __init__(self, environment: Environment) -> None:
-        """Init of visibility roadmap
+        """Init of visibility roadmaps
 
         :param environment: the environment
         """
         super().__init__(environment)
 
         potential_nodes = deepcopy(environment.endpoints)
-        for threat in self._environment.threats:
+        for threat in self._environment.circles:
             potential_nodes.extend(threat.boundary)
 
         edges = []

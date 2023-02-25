@@ -1,6 +1,7 @@
-from geometry.coord import Coord
-from environment.environment import Environment
 from roadmap.roadmap import Roadmap
+
+from environment.environment import Environment
+from geometry.coord import Coord
 
 GRID_STEP = 50
 

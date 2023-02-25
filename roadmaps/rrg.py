@@ -3,10 +3,10 @@ from typing import List
 
 from environment.environment import Environment
 from geometry.coord import Coord
-from roadmap.roadmap import Roadmap
+from roadmaps.prm import PRM
 
 
-class RRG(Roadmap):
+class RRG(PRM):
     def __init__(self, environment: Environment) -> None:
         super().__init__(environment)
 
@@ -14,10 +14,10 @@ class RRG(Roadmap):
         self._steering_coefficient = 5
 
     def _near(self, point: Coord) -> List[Coord]:
-        return [Coord(*p) for p in self.graph.nodes if Coord(*p).distance_to(point) < self._near_radius]
+        return [p for p in self.graph.nodes if p.distance_to(point) < self._near_radius]
 
     def _nearest(self, point: Coord) -> Coord:
-        return min([Coord(*p) for p in self.graph.nodes], key=lambda p: point.distance_to(p))
+        return min(self.graph.nodes, key=lambda p: point.distance_to(p))
 
     def add_samples(self, iterations: int) -> None:
         for _ in range(iterations):

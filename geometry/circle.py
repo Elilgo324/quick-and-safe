@@ -104,7 +104,7 @@ class Circle(Entity):
         return Circle(center=rand_center, radius=rand_radius)
 
     @classmethod
-    def generate_non_intersecting_random_threat(cls, threats_polygons: List[Polygon],
+    def generate_non_intersecting_random_circle(cls, threats_polygons: List[Polygon],
                                                 environment_range: Tuple[int, int],
                                                 radius_range: Tuple[int, int] = (100, 200)) -> 'Circle':
         new_threat = None
@@ -139,14 +139,14 @@ class Circle(Entity):
         )
 
         # find convex hull of all entities in the environment
-        all_shapely_points = [source.to_shapely, target.to_shapely]
+        all_shapely_points = [source.xy, target.xy]
         for circle in all_circles:
-            all_shapely_points += circle.to_shapely.coords
+            all_shapely_points += circle.to_shapely.boundary.coords
         convex_hull = Polygon(all_shapely_points).convex_hull
 
         # return the truncated partition
-        intersection_points = convex_hull.intersection(inf_partition.to_shapely)
-        return Segment(*intersection_points)
+        intersection_points = convex_hull.intersection(inf_partition.to_shapely).coords
+        return Segment(Coord(*intersection_points[0]), Coord(*intersection_points[1]))
 
     def plot(self) -> None:
         plt.plot([p.x for p in self.boundary], [p.y for p in self.boundary], color='red', zorder=1)

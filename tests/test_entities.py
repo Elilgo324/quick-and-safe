@@ -96,3 +96,25 @@ def test_exit_point():
     chord = math.sqrt(200 ** 2 + 200 ** 2)
     assert circle.calculate_exit_point(start_point, chord, Coord(1000, 1000)).almost_equal(Coord(400, 200))
     assert circle.calculate_exit_point(start_point, chord, Coord(-1000, -1000)).almost_equal(Coord(0, 200))
+
+
+def test_partition_between_circles():
+    r = 100
+    source = Coord(0, 100)
+    target = Coord(700, 100)
+    center1 = Coord(200, 100)
+    circle1 = Circle(center1, r)
+    center2 = Coord(500, 100)
+    circle2 = Circle(center2, r)
+    partition = Circle.calculate_partition_between_circles(circle1, circle2, source, target, [circle1, circle2])
+    assert partition.length == 2 * r
+
+    source = Coord(0, 1000)
+    partition = Circle.calculate_partition_between_circles(circle1, circle2, source, target, [circle1, circle2])
+    assert 500 < partition.length < 1000
+
+    center3 = Coord(1000, 1000)
+    circle3 = Circle(center3, r)
+    partition = Circle.calculate_partition_between_circles(circle1, circle2, source, target,
+                                                           [circle1, circle2, circle3])
+    assert 1000 < partition.length < 1100

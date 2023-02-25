@@ -1,11 +1,11 @@
 import math
 
-from geometry.geometric import calculate_points_in_distance_on_circle, calculate_directional_angle_of_line
-from geometry.coord import Coord
-from environment.environment import Environment
 import matplotlib.pyplot as plt
 
+from environment.environment import Environment
 from geometry.circle import Circle
+from geometry.coord import Coord
+from geometry.geometric import calculate_points_in_distance_on_circle, calculate_directional_angle_of_line
 
 if __name__ == '__main__':
     center = Coord(0, 0)
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     risk_limit = 6
     threat = Circle(center, radius)
     env = Environment(source=Coord(0, 0), target=Coord(1000, 1000), num_threats=1, seed_value=27)
-    env._threats = [threat]
+    env._circles = [threat]
 
 
     def path_length(theta, limit):
