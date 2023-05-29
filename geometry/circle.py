@@ -13,6 +13,7 @@ from geometry.segment import Segment
 
 INF = 1000
 
+
 class Circle(Entity):
     BUFFER_RESOLUTION = 40
     ANGLE_STEP = math.pi / BUFFER_RESOLUTION
@@ -34,6 +35,10 @@ class Circle(Entity):
         return self._radius
 
     @property
+    def perimeter(self) -> float:
+        return 2 * math.pi * self._radius
+
+    @property
     def inner_polygon(self) -> Polygon:
         return self._inner_polygon
 
@@ -45,7 +50,10 @@ class Circle(Entity):
     def to_shapely(self) -> Polygon:
         return self._inner_polygon
 
-    def path_intersection(self, path: Path) -> float:
+    def contains(self, coord: Coord) -> bool:
+        return coord.distance_to(self.center) <= self.radius
+
+    def path_intersection_length(self, path: Path) -> float:
         return sum([self.inner_polygon.intersection(segment.to_shapely).length for segment in path.segments])
 
     def calculate_exit_point(self, start: Coord, chord: float, target: Coord) -> Coord:
@@ -104,22 +112,23 @@ class Circle(Entity):
         return Circle(center=rand_center, radius=rand_radius)
 
     @classmethod
-    def generate_non_intersecting_random_circle(cls, threats_polygons: List[Polygon],
+    def generate_non_intersecting_random_circle(cls, circles: List['Circle'],
                                                 environment_range: Tuple[int, int],
-                                                radius_range: Tuple[int, int] = (100, 200)) -> 'Circle':
-        new_threat = None
+                                                radius_range: Tuple[int, int] = (50, 150)) -> 'Circle':
+        # used radius range of (25, 75) for the 50 circles experiment
+        new_circle = None
 
         is_intersecting = True
         while is_intersecting:
             is_intersecting = False
-            new_threat = Circle.generate_random_threat(environment_range, radius_range)
+            new_circle = Circle.generate_random_threat(environment_range, radius_range)
 
-            for threat in threats_polygons:
-                if threat.buffer(5).intersects(new_threat.inner_polygon.buffer(5)):
+            for circle in circles:
+                if circle.to_shapely.buffer(5).intersects(new_circle.to_shapely.buffer(5)):
                     is_intersecting = True
                     break
 
-        return new_threat
+        return new_circle
 
     @classmethod
     def calculate_partition_between_circles(cls, circle1: 'Circle', circle2: 'Circle', source: Coord, target: Coord,
@@ -148,13 +157,10 @@ class Circle(Entity):
         intersection_points = convex_hull.intersection(inf_partition.to_shapely).coords
         return Segment(Coord(*intersection_points[0]), Coord(*intersection_points[1]))
 
-    def plot(self) -> None:
-        plt.plot([p.x for p in self.boundary], [p.y for p in self.boundary], color='red', zorder=1)
+    def plot(self, color: str = 'red') -> None:
+        plt.plot([p.x for p in self.boundary], [p.y for p in self.boundary], color=color, zorder=1)
         plt.scatter(self.center.x, self.center.y, s=20, color='black', zorder=1)
-        plt.scatter(self.center.x, self.center.y, s=10, color='red', zorder=2)
+        plt.scatter(self.center.x, self.center.y, s=10, color=color, zorder=2)
 
     def __str__(self) -> str:
         return f'Circle({self.center},{self.radius})'
-
-    def __repr__(self) -> str:
-        return self.__str__()

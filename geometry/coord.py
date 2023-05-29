@@ -26,6 +26,10 @@ class Coord(Entity):
         return self.x, self.y
 
     @property
+    def perimeter(self) -> float:
+        return 0
+
+    @property
     def to_shapely(self) -> Point:
         if self._shapely_shape is None:
             self._shapely_shape = Point(self.x, self.y)
@@ -70,9 +74,6 @@ class Coord(Entity):
 
     def __str__(self):
         return f'Coord({self.x},{self.y})'
-
-    def __repr__(self):
-        return self.__str__()
 
     def plot(self, color='green'):
         plt.scatter(self.x, self.y, s=20, color='black', zorder=10)

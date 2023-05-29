@@ -3,7 +3,6 @@ from typing import Tuple
 
 import numpy as np
 
-from algorithms.multiple_threats import multiple_threats_shortest_path
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.geometric import calculate_points_in_distance_on_circle, \
@@ -14,7 +13,8 @@ INF = 10_000
 
 
 def single_threat_shortest_path(source: Coord, target: Coord, circle: Circle) -> Tuple[Path, float, float]:
-    return multiple_threats_shortest_path(source, target, [circle])
+    path = Path([source, target])
+    return path, path.length, circle.path_intersection_length(path)
 
 
 def _compute_s_t_contact_points(source: Coord, target: Coord, circle: Circle) -> Tuple[Coord, Coord]:
@@ -112,7 +112,7 @@ def single_threat_shortest_path_with_budget_constraint(
         source: Coord, target: Coord, circle: Circle, budget: float
 ) -> Tuple[Path, float, float]:
     # case 1: budget enough for direct path
-    if circle.path_intersection(Path([source, target])) <= budget:
+    if circle.path_intersection_length(Path([source, target])) <= budget:
         return _walking_straight(source, target, circle, budget)
 
     # case 2: budget is over contact points

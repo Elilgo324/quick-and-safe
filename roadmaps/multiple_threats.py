@@ -19,7 +19,7 @@ Tuple[Path, float, float]:
     path = Path([source, target])
 
     threat_intersection_length = sum(
-        [circle.path_intersection(path) for circle in circles]
+        [circle.path_intersection_length(path) for circle in circles]
     )
 
     return path, path.length, threat_intersection_length

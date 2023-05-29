@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import networkx as nx
+from tqdm import tqdm
 
 from algorithms.multiple_threats import multiple_threats_shortest_path
 from environment.environment import Environment
@@ -13,7 +14,7 @@ from geometry.path import Path
 from geometry.segment import Segment
 
 EPSILON = 0.0000001
-LAYER_GRANULARITY = 1
+LAYER_GRANULARITY = 10
 
 
 class Roadmap(ABC):
@@ -38,11 +39,10 @@ class Roadmap(ABC):
                 self._add_edges([(u, v)])
 
     def _compute_path_length_and_risk(self, path: Path) -> Tuple[float, float]:
-        path_length = path_risk = 0
+        path_risk = 0
         for p1, p2 in zip(path.coords[:-1], path.coords[1:]):
-            path_length += self._graph[p1.xy][p2.xy]['length']
-            path_risk += self._graph[p1.xy][p2.xy]['risk']
-        return round(path_length, 3), round(path_risk, 3)
+            path_risk += self._graph[p1][p2]['risk']
+        return path.length, path_risk
 
     def refine_path(self, path: Path) -> List[Coord]:
         # compute risks table in O(path)
@@ -72,7 +72,7 @@ class Roadmap(ABC):
             self._add_points([u, v])
 
             # add epsilon * length to risk in order to prefer shorter paths with same risk
-            self._graph.add_edge(u.xy, v.xy,
+            self._graph.add_edge(u, v,
                                  length=attributes['length'],
                                  risk=attributes['risk'] + EPSILON * attributes['length'])
 
@@ -84,15 +84,15 @@ class Roadmap(ABC):
         path_length, path_risk = self._compute_path_length_and_risk(path)
         return multiple_threats_shortest_path(source, target, self._environment)
 
-    def constrained_shortest_path(self, weight: str = 'length', constraint: str = 'risk', budget: float = 0) -> Tuple[
-        List[Coord], float, float]:
-        source, target = self._environment.source.xy, self._environment.target.xy
+    def constrained_shortest_path(self, budget: float = 0, weight: str = 'length', constraint: str = 'risk') -> Tuple[
+        Path, float, float]:
+        source, target = self._environment.source, self._environment.target
 
         layers_num = int((budget + 1) / LAYER_GRANULARITY)
         layers_graph = nx.DiGraph()
 
         # add nodes layers
-        for layer in range(layers_num):
+        for layer in tqdm(range(layers_num)):
             for node in self.graph.nodes:
                 # each node is (original x, original y, layer)
                 layers_graph.add_node((node, layer))
@@ -116,7 +116,7 @@ class Roadmap(ABC):
             layers_graph.add_edge((target, layer), virtual_target, length=0, risk=0)
 
         path = nx.shortest_path(layers_graph, weight=weight, source=(source, 0), target=virtual_target)
-        path = Path([Coord(*p) for p, _ in path[:-1]])
+        path = Path([p for p, _ in path[:-1]])
 
         path_length, path_risk = self._compute_path_length_and_risk(path)
         return path, path_length, path_risk

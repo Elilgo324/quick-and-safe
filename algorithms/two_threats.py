@@ -2,7 +2,6 @@ from typing import Tuple
 
 import numpy as np
 
-from algorithms.multiple_threats import multiple_threats_shortest_path
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint
 from geometry.circle import Circle
 from geometry.coord import Coord
@@ -14,13 +13,12 @@ INF = 1000
 
 def two_threats_shortest_path(source: Coord, target: Coord, circle1: Circle, circle2: Circle) \
         -> Tuple[Path, float, float]:
-    return multiple_threats_shortest_path(source, target, [circle1, circle2])
+    path = Path([source, target])
 
-
-def _considering_only_first_circle(source: Coord, target: Coord, circle1: Circle, circle2: Circle, budget: float) \
-        -> Tuple[Path, float, float]:
-    path, length, risk = single_threat_shortest_path_with_budget_constraint(target, source, circle1, budget)
-    return path, length, risk + circle2.path_intersection(path)
+    circles_intersection_length = sum(
+        [circle.path_intersection_length(path) for circle in [circle1, circle2]]
+    )
+    return path, path.length, circles_intersection_length
 
 
 def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circle1: Circle, circle2: Circle,
@@ -40,7 +38,7 @@ def _considering_both_circles_blackbox_method(source: Coord, target: Coord, circ
 
     path = min([L(d) for d in np.arange(0, partition.length, 1)], key=lambda p: p.length)
 
-    return path, path.length, circle1.path_intersection(path) + circle2.path_intersection(path)
+    return path, path.length, circle1.path_intersection_length(path) + circle2.path_intersection_length(path)
 
 
 def two_threats_shortest_path_with_budget_constraint(
@@ -53,8 +51,6 @@ def two_threats_shortest_path_with_budget_constraint(
     circle1, circle2 = min([(circle1, circle2), (circle2, circle1)],
                            key=lambda c1c2: c1c2[0].distance_to(source) + c1c2[1].distance_to(target))
 
-    # assumption: only "relevant" circles are included in the planning
-    # (i.e. the endpoints are located in different sides of the partition)
     path, length, risk = min([_considering_both_circles_blackbox_method(source, target, circle1, circle2, budget, alpha)
                               for alpha in np.arange(0, 1.01, 0.1)], key=lambda plr: plr[1])
     return path, length, risk
@@ -78,46 +74,4 @@ if __name__ == '__main__':
     target.plot()
     c1.plot()
     c2.plot()
-
-    # alphas = np.arange(0, 1.01, 0.1)
-    # als = []
-    # lengths = []
-    # for alpha in tqdm(alphas):
-    #     try:
-    #         path, length, _ = _considering_both_circles_blackbox_method(
-    #             source, target, c1, c2, budget, alpha)
-    #         als.append(alpha)
-    #         lengths.append(length)
-    #     except:
-    #         pass
-    # plt.plot(als, lengths)
-
     plt.show()
-    # plt.savefig(title + '.png')
-
-# if __name__ == '__main__':
-#     c1 = Circle(Coord(200, 100), 100)
-#     c2 = Circle(Coord(400, 125), 70)
-#     source = Coord(0, 125)
-#     target = Coord(600, 50)
-#     budget = 300
-#     alpha = 0.75
-#     # path, length, risk = two_threats_shortest_path_with_budget_constraint_blackbox_method(
-#     #     source, target, c1, c2, budget, 0.5)
-#     plt.subplot(2, 1, 1)
-#     # plt.title(f'length {round(length, 2)} risk {round(risk, 2)}')
-#     title = f'length as function of mid target shift (alpha={alpha} budget={budget})'
-#     plt.title(title)
-#     plt.gca().set_aspect('equal', adjustable='box')
-#     # path.plot()
-#     source.plot()
-#     target.plot()
-#     c1.plot()
-#     c2.plot()
-#
-#     plt.subplot(2, 1, 2)
-#
-#     _considering_both_circles_blackbox_method(source, target, c1, c2, budget, alpha)
-#
-#     # plt.show()
-#     plt.savefig(title + '.png')
