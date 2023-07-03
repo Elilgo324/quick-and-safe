@@ -75,6 +75,12 @@ class Segment(Entity):
             self._shapely_shape = LineString([self.start.to_shapely, self.end.to_shapely])
         return self._shapely_shape
 
+    def from_shapely(self, shapely_linestring: LineString) -> 'Segment':
+        ls_coords = shapely_linestring.coords
+        assert len(ls_coords) == 2
+
+        return Segment(Coord(*ls_coords[0]), Coord(*ls_coords[-1]))
+
     def point_projection(self, point: Coord) -> Coord:
         x1, y1 = self.start.xy
         x2, y2 = point.xy
@@ -113,6 +119,9 @@ class Segment(Entity):
 
     def __str__(self):
         return f'Segment({self.start},{self.end})'
+
+    def __eq__(self, other: 'Segment') -> bool:
+        return self.start == other.start and self.end == other.end
 
     def almost_equal(self, other: 'Segment') -> bool:
         return other.start.almost_equal(self.start) and other.end.almost_equal(self.end)

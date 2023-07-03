@@ -21,6 +21,9 @@ class Path(Entity):
             self._shapely_shape = LineString([c.to_shapely for c in self.coords])
         return self._shapely_shape
 
+    def from_shapely(self, shapely_linestring: LineString) -> 'Path':
+        return Path([Coord(*coord.xy) for coord in shapely_linestring.coords])
+
     @property
     def coords(self) -> List[Coord]:
         return self._coords
@@ -46,6 +49,10 @@ class Path(Entity):
         if self._length is None:
             self._length = Path.compute_path_length(self.coords)
         return self._length
+
+    @property
+    def perimeter(self) -> float:
+        return self.length
 
     @classmethod
     def compute_path_length(cls, path: List[Coord]) -> float:

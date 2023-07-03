@@ -35,6 +35,9 @@ class Coord(Entity):
             self._shapely_shape = Point(self.x, self.y)
         return self._shapely_shape
 
+    def from_shapely(self, shapely_point: Point) -> 'Entity':
+        return Coord(shapely_point.x, shapely_point.y)
+
     def shifted(self, distance: float, angle: float) -> 'Coord':
         x = distance * math.cos(angle)
         y = distance * math.sin(angle)

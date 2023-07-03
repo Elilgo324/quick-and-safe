@@ -1,8 +1,10 @@
 import math
+from itertools import product
 
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.path import Path
+from geometry.polygon import Polygon
 from geometry.segment import Segment
 
 
@@ -151,3 +153,33 @@ def test_containment_of_sample_on_segment():
     segment = Segment(Coord(-15, -3), Coord(40, 37))
     samples = [segment.sample() for _ in range(10)]
     assert all([segment.contains(sample) for sample in samples])
+
+
+def test_to_from_shapely():
+    coords = [Coord(-10, 100), Coord(25.5, 24.5), Coord(0, 0), Coord(2, 546), Coord(345, -100)]
+    segments = [Segment(coords[0], coords[-1]), Segment(coords[2], coords[1])]
+    polygons = [Polygon(coords), Polygon(coords + [Coord(1000, 1000)])]
+
+    for obj in coords + segments + polygons:
+        shapely_obj = obj.to_shapely
+        assert obj.from_shapely(shapely_obj) == obj
+
+
+def test_circle_linsplit():
+    circles = [Circle(Coord(0, 0), 100), Circle(Coord(100, -100), 200)]
+    amounts = [4, 10, 100]
+    for circle, amount in product(circles, amounts):
+        linsplit_points = circle.linsplit(amount)
+
+        assert len(linsplit_points) == amount
+        assert abs(linsplit_points[0].distance_to(linsplit_points[1])
+                   - linsplit_points[1].distance_to(linsplit_points[2])) < 1e-3
+        assert all([abs(lsp.distance_to(circle.center) - circle.radius) < 1e-3 for lsp in linsplit_points])
+
+
+def test_circle_linsplit_by_distance():
+    circles = [Circle(Coord(0, 0), 100), Circle(Coord(100, -100), 200)]
+    distances = [10, 100, 200]
+    for circle, distance in product(circles, distances):
+        linsplit_points = circle.linsplit_by_distance(distance)
+        assert len(linsplit_points) == int((2 * math.pi * circle.radius) / distance)

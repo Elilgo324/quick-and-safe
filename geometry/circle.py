@@ -3,6 +3,8 @@ from random import randint
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
+import shapely
 from shapely.geometry import Polygon
 
 from geometry.coord import Coord
@@ -25,6 +27,7 @@ class Circle(Entity):
         self._inner_polygon = center.to_shapely.buffer(radius, resolution=Circle.BUFFER_RESOLUTION)
         self._outer_polygon = center.to_shapely.buffer(radius + Circle.EPSILON, resolution=Circle.BUFFER_RESOLUTION)
         self._boundary = None
+        self._extreme_coords = None
 
     @property
     def center(self) -> Coord:
@@ -43,12 +46,35 @@ class Circle(Entity):
         return self._inner_polygon
 
     @property
+    def polygon(self) -> Polygon:
+        return self._inner_polygon
+
+    @property
     def outer_polygon(self) -> Polygon:
         return self._outer_polygon
 
     @property
     def to_shapely(self) -> Polygon:
         return self._inner_polygon
+
+    @property
+    def extreme_coords(self) -> Polygon:
+        if self._extreme_coords is None:
+            cx, cy = self.center.xy
+            r = self.radius
+            self._extreme_coords = [Coord(cx, cy + r), Coord(cx + r, cy), Coord(cx, cy - r), Coord(cx - r, cy)]
+        return self._extreme_coords
+
+    def linsplit(self, amount: int) -> List[Coord]:
+        return [self.center.shifted(distance=self.radius, angle=angle)
+                for angle in np.arange(0, 2 * math.pi, 2 * math.pi / amount)]
+
+    def linsplit_by_distance(self, distance: float) -> List[Coord]:
+        amount = int((2 * math.pi * self.radius) / distance)
+        return self.linsplit(amount)
+
+    def from_shapely(self, shapely_polygon: shapely.geometry.polygon.Polygon) -> 'Polygon':
+        return Polygon([Coord(x, y) for x, y in shapely_polygon.exterior.coords])
 
     def contains(self, coord: Coord) -> bool:
         return coord.distance_to(self.center) <= self.radius
@@ -155,6 +181,26 @@ class Circle(Entity):
 
         # return the truncated partition
         intersection_points = convex_hull.intersection(inf_partition.to_shapely).coords
+        return Segment(Coord(*intersection_points[0]), Coord(*intersection_points[1]))
+
+    @classmethod
+    def calculate_halfspace_between_circles(cls, circle1: 'Circle', circle2: 'Circle', world: Polygon) -> Segment:
+        # find inf partition
+        center1, center2 = circle1.center, circle2.center
+        radius1, radius2 = circle1.radius, circle2.radius
+
+        centers_segment = Segment(center1, center2)
+        centers_distance = centers_segment.length
+        centers_angle = centers_segment.angle
+
+        point_between = center1.shifted((radius1 + (centers_distance - radius2)) / 2, centers_angle)
+        inf_partition = Segment(
+            point_between.shifted(INF, centers_angle + 0.5 * math.pi),
+            point_between.shifted(INF, centers_angle - 0.5 * math.pi)
+        )
+
+        # return the truncated partition
+        intersection_points = world.intersection(inf_partition).coords
         return Segment(Coord(*intersection_points[0]), Coord(*intersection_points[1]))
 
     def plot(self, color: str = 'red') -> None:

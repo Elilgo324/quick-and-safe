@@ -5,6 +5,10 @@ from shapely.geometry.base import BaseGeometry
 
 
 class Entity(ABC):
+    @abstractmethod
+    def from_shapely(self, shapely_object: 'BaseGeometry') -> 'Entity':
+        pass
+
     @property
     @abstractmethod
     def perimeter(self) -> float:
@@ -15,10 +19,13 @@ class Entity(ABC):
     def to_shapely(self) -> BaseGeometry:
         pass
 
+    def contains(self, other: 'Entity') -> bool:
+        return self.to_shapely.contains(other.to_shapely)
+
     def intersects(self, other: 'Entity') -> bool:
         return self.to_shapely.intersects(other.to_shapely)
 
-    def intersection(self, other: 'Entity') -> bool:
+    def intersection(self, other: 'Entity') -> 'Entity':
         return self.to_shapely.intersection(other.to_shapely)
 
     def distance_to(self, other: Union[BaseGeometry, 'Entity']) -> float:

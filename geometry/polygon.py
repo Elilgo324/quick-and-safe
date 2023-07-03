@@ -11,6 +11,9 @@ from geometry.segment import Segment
 
 class Polygon(Entity):
     def __init__(self, coords: List[Coord]) -> None:
+        if coords[-1] == coords[0]:
+            coords = coords[:-1]
+
         self._coords = coords
         self._segments = [Segment(c1, c2) for c1, c2 in zip(coords[:-1], coords[1:])] \
                          + [Segment(coords[-1], coords[0])]
@@ -35,6 +38,13 @@ class Polygon(Entity):
             self._shapely_polygon = shapely.geometry.polygon.Polygon([coord.xy for coord in self.coords])
         return self._shapely_polygon
 
+    def from_shapely(self, shapely_polygon: shapely.geometry.polygon.Polygon) -> 'Polygon':
+        return Polygon.polygon_from_shapely(shapely_polygon)
+
+    @classmethod
+    def polygon_from_shapely(cls, shapely_polygon: shapely.geometry.polygon.Polygon) -> 'Polygon':
+        return Polygon([Coord(x, y) for x, y in shapely_polygon.exterior.coords])
+
     def linsplit(self, amount: int) -> List[Coord]:
         segments_linsplits = [s.linsplit(round(amount * (s.length / self.perimeter))) for s in self.segments]
         segments_linsplits = list(set([item for sublist in segments_linsplits for item in sublist]))
@@ -44,6 +54,9 @@ class Polygon(Entity):
         segments_linsplits = [segment.linsplit_by_distance(distance) for segment in self.segments]
         segments_linsplits = list(set([item for sublist in segments_linsplits for item in sublist]))
         return segments_linsplits
+
+    def __eq__(self, other: 'Polygon') -> bool:
+        return len(self.coords) == len(other.coords) and all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)])
 
     def __str__(self) -> str:
         return f'Polygon({self.coords})'
