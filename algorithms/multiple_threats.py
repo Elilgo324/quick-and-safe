@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 from algorithms.single_threat import single_threat_shortest_path_with_budget_constraint
 from algorithms.two_threats import two_threats_shortest_path_with_budget_constraint
+from environment.environment import Environment
 from geometry.circle import Circle
 from geometry.coord import Coord
 from geometry.path import Path
@@ -69,7 +70,12 @@ def multiple_threats_shortest_path_with_budget_constraint_given_order_and_budget
                 path_to_point[cur_p] = path_to_cur_p if path_to_point[cur_p].length > path_to_cur_p.length \
                     else path_to_point[cur_p]
 
-    return path_to_point[target], path_to_point[target].length, budget
+    path = path_to_point[target]
+    environment = Environment(source, target, circles)
+    spent_budget = environment.compute_path_attributes(path)['risk']
+    print(f'spent_budget {spent_budget}')
+
+    return path, path.length, spent_budget
 
 
 def multiple_threats_shortest_path_with_budget_constraint_given_budget(

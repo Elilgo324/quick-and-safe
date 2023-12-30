@@ -28,7 +28,8 @@ if __name__ == '__main__':
 
         return from_source + limit + to_target
 
-    all_thetas = [(x*2*math.pi) / 360 for x in range(360)]
+
+    all_thetas = [(x * 2 * math.pi) / 360 for x in range(360)]
 
     source_contact1, source_contact2 = source.contact_points_with_circle(center, radius)
     target_contact1, target_contact2 = target.contact_points_with_circle(center, radius)
@@ -36,9 +37,9 @@ if __name__ == '__main__':
     source_contact = min([source_contact1, source_contact2], key=lambda x: x.distance(target))
     target_contact = min([target_contact1, target_contact2], key=lambda x: x.distance(source))
 
-    p1,p2 = calculate_points_in_distance_on_circle(
+    p1, p2 = calculate_points_in_distance_on_circle(
         center, radius, source_contact, risk_limit)
-    chord_point_of_source_contact = min([p1,p2], key=lambda x: x.distance(target))
+    chord_point_of_source_contact = min([p1, p2], key=lambda x: x.distance(target))
 
     p1, p2 = calculate_points_in_distance_on_circle(
         center, radius, target_contact, risk_limit)
@@ -72,6 +73,5 @@ if __name__ == '__main__':
             min([second_point1, second_point2], key=lambda x: x.distance(target)),
             target]
     plt.plot([c.x for c in path], [c.y for c in path])
-
 
     plt.show()

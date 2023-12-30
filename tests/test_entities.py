@@ -183,3 +183,11 @@ def test_circle_linsplit_by_distance():
     for circle, distance in product(circles, distances):
         linsplit_points = circle.linsplit_by_distance(distance)
         assert len(linsplit_points) == int((2 * math.pi * circle.radius) / distance)
+
+def test_path_reversed_reversed_is_path():
+    coords = [Coord(0,0), Coord(-100,100), Coord(340,50), Coord(20,-1120), Coord(3,3), Coord(3,1000)]
+    path = Path(coords)
+    assert path == path.reversed
+
+if __name__ == '__main__':
+    test_path_reversed_reversed_is_path()

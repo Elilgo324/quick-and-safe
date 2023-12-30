@@ -25,6 +25,10 @@ class Path(Entity):
         return Path([Coord(*coord.xy) for coord in shapely_linestring.coords])
 
     @property
+    def reversed(self) -> 'Path':
+        return self.__init__(self.coords[::-1])
+
+    @property
     def coords(self) -> List[Coord]:
         return self._coords
 
@@ -59,7 +63,8 @@ class Path(Entity):
         return sum([c1.distance_to(c2) for c1, c2 in zip(path[:-1], path[1:])])
 
     def __eq__(self, other: 'Path') -> bool:
-        return all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)])
+        return all([c1 == c2 for c1, c2 in zip(self.coords, other.coords)]) \
+            and all([e1 == e2 for e1, e2 in zip(self.segments, other.segments)])
 
     def __getitem__(self, idx: int) -> 'Coord':
         return self.coords[idx]

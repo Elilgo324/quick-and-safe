@@ -16,7 +16,11 @@ from geometry.segment import Segment
 
 class Environment:
     def __init__(self, source: Coord, target: Coord, circles: List[Circle], env_range: (int, int) = (1000, 1000),
-                 seed_value: int = 42) -> None:
+                 seed_value: int = 42, obstacles_idx: List[int] = None) -> None:
+        if obstacles_idx is None:
+            obstacles_idx = []
+        self._obstacles_idx = obstacles_idx
+
         self._seed_value = seed_value
         seed(self._seed_value)
 
@@ -113,8 +117,10 @@ class Environment:
 
     def compute_segment_attributes(self, segment: Segment) -> Dict[str, float]:
         return {'length': segment.length,
-                'risk': sum(
-                    [circle.path_intersection_length(Path([segment.start, segment.end])) for circle in self.circles])}
+                'risk': sum([
+                    circle.path_intersection_length(Path([segment.start, segment.end])) if not i in self._obstacles_idx else 420_000
+                    for i, circle in enumerate(self.circles)
+                ])}
 
     def compute_path_attributes(self, path: Path) -> Dict[str, float]:
         segments_attributes = [self.compute_segment_attributes(s) for s in path.segments]

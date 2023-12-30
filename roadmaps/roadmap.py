@@ -17,7 +17,7 @@ EPSILON = 0.0000001
 LAYER_GRANULARITY = 10
 
 
-class Roadmap(ABC):
+class Roadmap:
     def __init__(self, environment: Environment) -> None:
         self._environment = environment
 
@@ -79,25 +79,34 @@ class Roadmap(ABC):
     def shortest_path(self, weight: str = 'length') -> Tuple[Path, float, float]:
         source, target = self._environment.source, self._environment.target
 
-        path = Path([Coord(*p) for p in nx.shortest_path(self.graph, weight=weight, source=source, target=target)])
+        path = Path([p for p in nx.shortest_path(self.graph, weight=weight, source=source, target=target)])
 
         path_length, path_risk = self._compute_path_length_and_risk(path)
-        return multiple_threats_shortest_path(source, target, self._environment)
+        return path, path_length, path_risk
 
     def constrained_shortest_path(self, budget: float = 0, weight: str = 'length', constraint: str = 'risk') -> Tuple[
         Path, float, float]:
+
         source, target = self._environment.source, self._environment.target
+
+        if budget == 0:
+            for e in self._graph.edges:
+                if self._graph[e[0]][e[1]]['risk'] > 0:
+                    self._graph[e[0]][e[1]]['length'] = 100_000
+            return self.shortest_path()
 
         layers_num = int((budget + 1) / LAYER_GRANULARITY)
         layers_graph = nx.DiGraph()
 
         # add nodes layers
+        print('adding nodes layers..')
         for layer in tqdm(range(layers_num)):
             for node in self.graph.nodes:
                 # each node is (original x, original y, layer)
                 layers_graph.add_node((node, layer))
 
         # connect layers with edges
+        print('connecting layers with edges..')
         for layer in range(layers_num):
             for u, v, edge_data in self.graph.edges(data=True):
                 jump = ceil(round(edge_data[constraint] / LAYER_GRANULARITY, 3))
@@ -115,6 +124,7 @@ class Roadmap(ABC):
         for layer in range(layers_num):
             layers_graph.add_edge((target, layer), virtual_target, length=0, risk=0)
 
+        print('calculating shortest path..')
         path = nx.shortest_path(layers_graph, weight=weight, source=(source, 0), target=virtual_target)
         path = Path([p for p, _ in path[:-1]])
 
@@ -130,7 +140,7 @@ class Roadmap(ABC):
             # plot edges
             if display_edges:
                 for u, v in self._graph.edges:
-                    plt.plot([u[0], v[0]], [u[1], v[1]], color='gray', linestyle='dashed', zorder=1)
+                    plt.plot([u.x, v.x], [u.y, v.y], color='gray', linestyle='dashed', zorder=1)
 
             # plot nodes
             for node in self.graph.nodes:
